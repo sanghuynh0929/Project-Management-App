@@ -1,5 +1,6 @@
 package com.thesis.projectmanagement.model;
 
+import com.thesis.projectmanagement.constants.enums.EpicStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
@@ -17,7 +18,8 @@ public class Epic {
     private String description;
     private LocalDate startDate;
     private LocalDate endDate;
-
+    @Enumerated(EnumType.STRING)
+    private EpicStatus status;
     @ManyToOne
     @JoinColumn(name = "project_id")
     private Project project;
@@ -43,4 +45,5 @@ public class Epic {
         inverseJoinColumns = @JoinColumn(name = "person_id")
     )
     private List<Person> assignees = new ArrayList<>();
-} 
+
+}
