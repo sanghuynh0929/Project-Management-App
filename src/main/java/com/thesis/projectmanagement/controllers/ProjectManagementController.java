@@ -1,4 +1,4 @@
-package com.thesis.projectmanagement;
+package com.thesis.projectmanagement.controllers;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
