@@ -1,4 +1,4 @@
-package com.thesis.projectmanagement.dto;
+package com.thesis.projectmanagement.dto.epic;
 
 import com.thesis.projectmanagement.constants.enums.EpicStatus;
 import lombok.Data;
