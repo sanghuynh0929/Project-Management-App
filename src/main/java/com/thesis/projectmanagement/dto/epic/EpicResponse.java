@@ -1,4 +1,4 @@
-package com.thesis.projectmanagement.dto;
+package com.thesis.projectmanagement.dto.epic;
 
 import lombok.Data;
 
@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Data
-public class EpicDto {
+public class EpicResponse {
     private Long id;
     private String title;
     private String description;

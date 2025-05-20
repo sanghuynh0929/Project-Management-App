@@ -1,15 +1,15 @@
 package com.thesis.projectmanagement.mapper;
 
-import com.thesis.projectmanagement.dto.EpicDto;
-import com.thesis.projectmanagement.dto.EpicRequest;
+import com.thesis.projectmanagement.dto.epic.EpicResponse;
+import com.thesis.projectmanagement.dto.epic.EpicRequest;
 import com.thesis.projectmanagement.model.Epic;
 import com.thesis.projectmanagement.model.Person;
 
 import java.util.stream.Collectors;
 
 public class EpicMapper {
-    public static EpicDto toDto(Epic epic) {
-        EpicDto dto = new EpicDto();
+    public static EpicResponse toDto(Epic epic) {
+        EpicResponse dto = new EpicResponse();
         dto.setId(epic.getId());
         dto.setTitle(epic.getTitle());
         dto.setDescription(epic.getDescription());
