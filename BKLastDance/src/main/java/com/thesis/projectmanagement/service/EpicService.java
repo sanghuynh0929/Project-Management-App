@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface EpicService {
     List<EpicResponse> getAllEpics();
+    List<EpicResponse> getEpicsByProjectId(Long projectId);
     EpicResponse getEpicById(Long id);
     EpicResponse createEpic(EpicRequest request);
     EpicResponse updateEpic(Long id, EpicRequest request);

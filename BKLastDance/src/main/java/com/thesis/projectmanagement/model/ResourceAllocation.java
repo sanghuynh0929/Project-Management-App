@@ -3,23 +3,26 @@ package com.thesis.projectmanagement.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-@Entity
 @Data
-public class Cost {
+@Entity
+@Table(name = "resource_allocation")
+public class ResourceAllocation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
-    private Double amount;
-    private String description;
-    private String type;
+    private Double fte;
 
-    @ManyToOne
-    @JoinColumn(name = "work_item_id")
-    private WorkItem workItem;
 
     @ManyToOne
     @JoinColumn(name = "epic_id")
     private Epic epic;
-} 
+
+    @ManyToOne @JoinColumn(name = "person_id")
+    private Person person;
+
+    @ManyToOne @JoinColumn(name = "sprint_id")
+    private Sprint sprint;
+}
+
+

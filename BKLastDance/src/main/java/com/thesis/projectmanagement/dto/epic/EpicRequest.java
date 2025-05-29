@@ -11,6 +11,7 @@ public class EpicRequest {
     private String description;
     private LocalDate startDate;
     private LocalDate endDate;
-    private EpicStatus status; // or use EpicStatus enum
+    private EpicStatus status;
+    private Long projectId;// or use EpicStatus enum
 }
 
