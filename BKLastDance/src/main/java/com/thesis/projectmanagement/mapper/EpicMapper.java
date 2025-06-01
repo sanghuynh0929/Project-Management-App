@@ -4,6 +4,7 @@ import com.thesis.projectmanagement.dto.epic.EpicResponse;
 import com.thesis.projectmanagement.dto.epic.EpicRequest;
 import com.thesis.projectmanagement.model.Epic;
 import com.thesis.projectmanagement.model.Person;
+import com.thesis.projectmanagement.model.Project;
 
 import java.util.stream.Collectors;
 
@@ -33,13 +34,14 @@ public class EpicMapper {
 
         return dto;
     }
-    public static Epic fromRequest(EpicRequest request) {
+    public static Epic fromRequest(EpicRequest request, Project project) {
         Epic epic = new Epic();
         epic.setTitle(request.getTitle());
         epic.setDescription(request.getDescription());
         epic.setStartDate(request.getStartDate());
         epic.setEndDate(request.getEndDate());
         epic.setStatus(request.getStatus());
+        epic.setProject(project); // Assuming Project is set in the request
         return epic;
     }
 }

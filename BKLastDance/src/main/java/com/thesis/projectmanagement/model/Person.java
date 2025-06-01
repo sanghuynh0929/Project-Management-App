@@ -3,7 +3,9 @@ package com.thesis.projectmanagement.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Entity
 @Data
@@ -27,4 +29,7 @@ public class Person {
     @MapKeyJoinColumn(name = "epic_id")
     @Column(name = "hours")
     private Map<Epic, Double> epicHours = new HashMap<>();
+
+    @ManyToMany(mappedBy = "members")
+    private Set<Team> teams = new HashSet<>();
 } 

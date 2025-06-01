@@ -27,6 +27,9 @@ public class Project {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     private List<Epic> epics = new ArrayList<>();
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Team> teams = new ArrayList<>();
+
     @PrePersist
     public void onCreate() {
         createdAt = LocalDateTime.now();

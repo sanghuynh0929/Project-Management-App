@@ -42,4 +42,13 @@ public class EpicController {
         epicService.cancelEpic(id);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<EpicResponse>> getEpicsByProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(epicService.getEpicsByProjectId(projectId));
+    }
+
+    @GetMapping("/{id}/dependencies")
+    public ResponseEntity<List<String>> getDependencies(@PathVariable Long id) {
+        return ResponseEntity.ok(epicService.getDependencyTitles(id));
+    }
 }

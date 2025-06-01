@@ -12,6 +12,8 @@ public class Cost {
 
     private String name;
     private Double amount;
+    private String description;
+    private String type;
 
     @ManyToOne
     @JoinColumn(name = "work_item_id")

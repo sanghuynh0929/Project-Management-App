@@ -17,7 +17,11 @@ public class CostMapper {
         dto.setId(cost.getId());
         dto.setName(cost.getName());
         dto.setAmount(cost.getAmount());
+        dto.setDescription(cost.getDescription());
+        dto.setType(cost.getType());
+        dto.setEpicId(cost.getEpic() != null ? cost.getEpic().getId() : null);
         dto.setEpicTitle(cost.getEpic() != null ? cost.getEpic().getTitle() : null);
+        dto.setWorkItemId(cost.getWorkItem() != null ? cost.getWorkItem().getId() : null);
         dto.setWorkItemTitle(cost.getWorkItem() != null ? cost.getWorkItem().getTitle() : null);
         return dto;
     }

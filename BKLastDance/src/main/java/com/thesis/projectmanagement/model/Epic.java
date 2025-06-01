@@ -46,4 +46,8 @@ public class Epic {
     )
     private List<Person> assignees = new ArrayList<>();
 
+    @ManyToOne
+    @JoinColumn(name = "team_id")           // FK mới
+    private Team team;
+
 }
