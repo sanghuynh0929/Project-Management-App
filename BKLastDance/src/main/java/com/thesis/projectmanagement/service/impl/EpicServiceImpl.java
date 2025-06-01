@@ -11,6 +11,7 @@ import com.thesis.projectmanagement.repository.ProjectRepository;
 import com.thesis.projectmanagement.service.EpicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -74,5 +75,18 @@ public class EpicServiceImpl implements EpicService {
                 .orElseThrow(() -> new RuntimeException("Epic not found"));
         epic.setStatus(EpicStatus.valueOf("CANCELED"));
         epicRepository.save(epic);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<String> getDependencyTitles(Long epicId) {
+        Epic epic = epicRepository.findWithDependenciesById(epicId);
+        if (epic == null) {
+            throw new IllegalArgumentException("Epic id=" + epicId + " không tồn tại");
+        }
+        return epic.getDependencies()
+                .stream()
+                .map(Epic::getTitle)
+                .toList();
     }
 }
