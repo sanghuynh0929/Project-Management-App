@@ -1,6 +1,5 @@
-import React from 'react';
-
-interface ProjectCardProps {
+/* no JSX import needed with `"jsx":"react-jsx"` */
+export interface ProjectCardProps {
     id: number;
     name: string;
     description: string;
@@ -9,18 +8,22 @@ interface ProjectCardProps {
     onClick?: (id: number) => void;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ id, name, description, createdAt, updatedAt, onClick }) => {
+export default function ProjectCard({
+                                        id, name, description, createdAt, updatedAt, onClick,
+                                    }: ProjectCardProps) {
     return (
         <div
-            className="bg-white shadow-md hover:shadow-lg rounded-2xl p-6 border border-green-200 cursor-pointer transition duration-300"
+            className="cursor-pointer rounded-2xl border border-green-200 bg-white p-6 shadow-md transition hover:shadow-lg"
             onClick={() => onClick?.(id)}
         >
-            <h2 className="text-xl font-semibold text-green-800 mb-2">{name}</h2>
-            <p className="text-gray-600 text-sm mb-4">{description}</p>
-            <div className="text-sm text-gray-500">Created: {new Date(createdAt).toLocaleDateString()}</div>
-            <div className="text-sm text-gray-500">Updated: {new Date(updatedAt).toLocaleDateString()}</div>
+            <h2 className="mb-2 text-xl font-semibold text-green-800">{name}</h2>
+            <p className="mb-4 text-sm text-gray-600">{description}</p>
+            <div className="text-sm text-gray-500">
+                Created&nbsp;{new Date(createdAt).toLocaleDateString()}
+            </div>
+            <div className="text-sm text-gray-500">
+                Updated&nbsp;{new Date(updatedAt).toLocaleDateString()}
+            </div>
         </div>
     );
-};
-
-export default ProjectCard;
+}
