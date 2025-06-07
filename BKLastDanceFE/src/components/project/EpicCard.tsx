@@ -1,8 +1,8 @@
 import { Link, useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { Badge } from '@/components/ui/badge.tsx';
 import { Epic, EpicStatus } from '@/types';
-import { formatDate } from '@/utils/date';
+import { formatDate } from '@/utils/date.ts';
 
 interface EpicCardProps {
   epic: Epic; // Data from API (id, title, description, startDate, endDate, status, projectId)

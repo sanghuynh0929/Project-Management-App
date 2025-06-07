@@ -2,9 +2,9 @@
 import React, { useMemo } from "react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Card }     from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@/components/ui/table.tsx";
+import { Card }     from "@/components/ui/card.tsx";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 import {
   useQuery,
   useQueries,
@@ -13,10 +13,10 @@ import {
 }                   from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 
-import { epicService }               from "@/services/epicService";
-import { sprintService }             from "@/services/sprintService";
-import { resourceAllocationService } from "@/services/resourceAllocationService";
-import { personService }             from "@/services/personService";
+import { epicService }               from "@/services/epicService.ts";
+import { sprintService }             from "@/services/sprintService.ts";
+import { resourceAllocationService } from "@/services/resourceAllocationService.ts";
+import { personService }             from "@/services/personService.ts";
 
 import {
   Epic,
@@ -24,7 +24,7 @@ import {
   ResourceAllocation,
   Person,
 } from "@/types";
-import { formatDate } from "@/utils/date";
+import { formatDate } from "@/utils/date.ts";
 
 /* ------------------------------------------------------------------ */
 /* PersonAllocationTable – hiển thị FTE mỗi cá nhân theo sprint       */

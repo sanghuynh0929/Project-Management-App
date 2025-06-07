@@ -1,5 +1,3 @@
-// src/hooks/useEpics.ts
-import { useParams } from 'react-router-dom';
 import {
   useQuery,
   useMutation,
@@ -7,19 +5,20 @@ import {
 } from '@tanstack/react-query';
 
 import { epicService } from '@/services/epicService';
-import { Epic, EpicRequest } from '@/types';
+import {Cost, Epic, EpicRequest, Sprint, WorkItem} from '@/types';
 import { toast } from '@/hooks/use-toast';
+import {workItemService} from "@/services/workItemService.ts";
+import {sprintService} from "@/services/sprintService.ts";
+import {costService} from "@/services/costService.ts";
+import {useMemo} from "react";
 
 /**
  * useEpics – fetch + CRUD epics theo project hiện tại
  *
- * @param overrideProjectId   (tuỳ chọn) truyền thẳng projectId;
  *                            nếu bỏ trống sẽ đọc từ URL /epics/:projectId
+ * @param pid
  */
-export function useEpics(overrideProjectId?: number) {
-  /* 1️⃣  Xác định projectId */
-  const { projectId: routeId } = useParams<{ projectId: string }>();
-  const pid = overrideProjectId ?? (routeId ? Number(routeId) : undefined);
+export function useProject(pid?: number) {
 
   const queryClient = useQueryClient();
 
@@ -28,6 +27,24 @@ export function useEpics(overrideProjectId?: number) {
     queryKey: ['epics', pid],
     enabled : !!pid,                              // chỉ chạy khi có id
     queryFn : () => epicService.getEpicsByProject(pid!),
+  });
+
+  const costsQuery   = useQuery({
+      queryKey: ['costs',   pid],
+      enabled: !!pid,
+      queryFn: () => costService.getCostsByProject(pid!)
+  });
+
+  const sprintsQuery = useQuery({
+    queryKey : ['sprints', pid],
+    enabled  : !!pid,
+    queryFn  : () => sprintService.getSprintsByProject(pid!),
+  });
+
+  const workItemsQuery = useQuery<WorkItem[]>({
+    queryKey : ["workItems", pid],
+    queryFn  : () => workItemService.getWorkItemsByProject(pid!),
+    enabled  : !!pid,
   });
 
   /* 3️⃣  Helper invalidation */
@@ -72,6 +89,9 @@ export function useEpics(overrideProjectId?: number) {
   /* 7️⃣  Trả về tiện ích */
   return {
     epics      : epicsQuery.data ?? [],
+    sprints : sprintsQuery.data ?? [],
+    costs : costsQuery.data ?? [],
+    workItems : workItemsQuery.data,
     isLoading  : epicsQuery.isLoading,
     isError    : epicsQuery.isError,
     error      : epicsQuery.error,

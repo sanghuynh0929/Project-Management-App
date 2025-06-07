@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { MainLayout } from '@/components/MainLayout';
-import { ResourceView } from '@/components/epics/ResourceView';
+import { ResourceView } from '@/components/project/ResourceView.tsx';
 
 const Resources = () => {
   return (

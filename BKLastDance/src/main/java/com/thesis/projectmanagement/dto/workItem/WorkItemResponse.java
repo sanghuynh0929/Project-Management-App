@@ -13,6 +13,6 @@ public class WorkItemResponse {
     private LocalDate startDate;
     private LocalDate endDate;
     private WorkItemType type;
-    private String epicTitle;
-    private String sprintName;
+    private Long epicId;
+    private Long sprintId;
 }

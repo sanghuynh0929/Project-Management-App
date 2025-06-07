@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import EpicCard from './EpicCard';
-import { Button } from '@/components/ui/button';
+import EpicCard from './EpicCard.tsx';
+import { Button } from '@/components/ui/button.tsx';
 import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input.tsx';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useEpics } from '@/hooks/useEpics';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@/components/ui/select.tsx';
+import { useProject } from '@/hooks/useProject.ts';
+import { Skeleton } from '@/components/ui/skeleton.tsx';
 
 export function BacklogView() {
   /* 🔑 projectId lấy từ URL /epics/:projectId */
@@ -24,7 +24,7 @@ export function BacklogView() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   /* ✅ chỉ fetch khi pid tồn tại */
-  const { epics = [], isLoading, isError } = useEpics(pid);
+  const { epics = [], isLoading, isError } = useProject(pid);
 
   /* ----- FILTER ----- */
   const filteredEpics = epics.filter((epic) => {

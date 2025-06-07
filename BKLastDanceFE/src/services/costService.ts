@@ -20,5 +20,12 @@ export const costService = {
   
   deleteCost: async (id: string): Promise<void> => {
     await api.delete(`/api/costs/${id}`);
-  }
+  },
+
+  // costService.ts
+  getCostsByProject: async (projectId: number) => {
+    const res = await api.get(`/api/costs/project/${projectId}`);
+    return res.data;
+  },
+
 };

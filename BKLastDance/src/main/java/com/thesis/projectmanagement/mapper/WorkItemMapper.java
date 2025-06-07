@@ -24,8 +24,8 @@ public class WorkItemMapper {
         dto.setStartDate(item.getStartDate());
         dto.setEndDate(item.getEndDate());
         dto.setType(item.getType());
-        dto.setEpicTitle(item.getEpic() != null ? item.getEpic().getTitle() : null);
-        dto.setSprintName(item.getSprint() != null ? item.getSprint().getName() : null);
+        dto.setEpicId(item.getEpic() != null ? item.getEpic().getId() : null);
+        dto.setSprintId(item.getSprint() != null ? item.getSprint().getId() : null);
         return dto;
     }
 }

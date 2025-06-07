@@ -1,6 +1,6 @@
 package com.thesis.projectmanagement.controllers;
 
-import com.thesis.projectmanagement.dto.cost.CostResponse;
+import com.thesis.projectmanagement.dto.cost.CostDto;
 import com.thesis.projectmanagement.dto.cost.CostRequest;
 import com.thesis.projectmanagement.service.CostService;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +18,17 @@ public class CostController {
     private final CostService costService;
 
     @GetMapping("/epic/{epicId}")
-    public ResponseEntity<List<CostResponse>> getCostsByEpic(@PathVariable Long epicId) {
+    public ResponseEntity<List<CostDto>> getCostsByEpic(@PathVariable Long epicId) {
         return ResponseEntity.ok(costService.getCostsByEpicId(epicId));
     }
 
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<CostDto>> getCostsByProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(costService.getCostsByProjectId(projectId));
+    }
+
     @PostMapping
-    public ResponseEntity<CostResponse> createCost(@RequestBody CostRequest request) {
+    public ResponseEntity<CostDto> createCost(@RequestBody CostRequest request) {
         return ResponseEntity.ok(costService.createCost(request));
     }
 

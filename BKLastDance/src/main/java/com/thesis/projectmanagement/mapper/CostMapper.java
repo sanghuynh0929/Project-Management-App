@@ -1,7 +1,7 @@
 package com.thesis.projectmanagement.mapper;
 
+import com.thesis.projectmanagement.dto.cost.CostDto;
 import com.thesis.projectmanagement.dto.cost.CostRequest;
-import com.thesis.projectmanagement.dto.cost.CostResponse;
 import com.thesis.projectmanagement.model.Cost;
 
 public class CostMapper {
@@ -12,17 +12,15 @@ public class CostMapper {
         return cost;
     }
 
-    public static CostResponse toResponse(Cost cost) {
-        CostResponse dto = new CostResponse();
+    public static CostDto toResponse(Cost cost) {
+        CostDto dto = new CostDto();
         dto.setId(cost.getId());
         dto.setName(cost.getName());
         dto.setAmount(cost.getAmount());
         dto.setDescription(cost.getDescription());
         dto.setType(cost.getType());
         dto.setEpicId(cost.getEpic() != null ? cost.getEpic().getId() : null);
-        dto.setEpicTitle(cost.getEpic() != null ? cost.getEpic().getTitle() : null);
         dto.setWorkItemId(cost.getWorkItem() != null ? cost.getWorkItem().getId() : null);
-        dto.setWorkItemTitle(cost.getWorkItem() != null ? cost.getWorkItem().getTitle() : null);
         return dto;
     }
 }

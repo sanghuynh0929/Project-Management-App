@@ -14,7 +14,7 @@ import Sprints from "./pages/Sprints";
 import Issues from "./pages/Issues";
 import Settings from "./pages/Settings";
 import ProjectListPage from "@/pages/ProjectList.tsx";
-import {BacklogView} from "@/components/epics/BacklogView.tsx";
+import {BacklogView} from "@/components/project/BacklogView.tsx";
 import {MainLayout} from "@/components/MainLayout.tsx";
 import ProjectLayout from "@/components/ProjectLayout.tsx";
 

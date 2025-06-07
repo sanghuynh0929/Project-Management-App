@@ -54,8 +54,8 @@ export interface Cost {
   name: string;
   type: 'Cloud' | 'Outsource' | 'Other';
   amount: number;
-  sprintId: number;
-  workItemId?: string; // Add workItemId for Cost relationship
+  epicId: number;
+  workItemId?: number; // Add workItemId for Cost relationship
 }
 
 export interface WorkItem {
@@ -65,9 +65,9 @@ export interface WorkItem {
   startDate: Date;
   endDate: Date;
   type: WorkItemType;
-  projectId: string;
-  sprintId: string | null;
+  sprintId: number | null;
   epicId: string;
+  projectId: string;
   costs: Cost[];
   dependencies: number[]; // Array of WorkItem IDs this item depends on
   assignees: number[]; // Array of Person/TeamMember IDs assigned to this item
