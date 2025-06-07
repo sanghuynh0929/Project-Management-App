@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface WorkItemRepository extends JpaRepository<WorkItem, Long> {
     List<WorkItem> findByEpicId(Long epicId);
+    List<WorkItem> findByEpicProjectId(Long projectId);
 }
 

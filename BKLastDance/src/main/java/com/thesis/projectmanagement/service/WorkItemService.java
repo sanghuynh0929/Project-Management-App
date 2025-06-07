@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface WorkItemService {
     List<WorkItemResponse> getWorkItemsByEpicId(Long epicId);
+    List<WorkItemResponse> getWorkItemsByProjectId(Long projectId);
     WorkItemResponse getWorkItemById(Long id);
     WorkItemResponse createWorkItem(WorkItemRequest request);
     WorkItemResponse updateWorkItem(Long id, WorkItemRequest request);

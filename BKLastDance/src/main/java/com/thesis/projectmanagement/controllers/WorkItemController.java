@@ -21,7 +21,10 @@ public class WorkItemController {
     public ResponseEntity<List<WorkItemResponse>> getWorkItemsByEpic(@PathVariable Long epicId) {
         return ResponseEntity.ok(workItemService.getWorkItemsByEpicId(epicId));
     }
-
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<WorkItemResponse>> getByProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(workItemService.getWorkItemsByProjectId(projectId));
+    }
     @GetMapping("/{id}")
     public ResponseEntity<WorkItemResponse> getWorkItemById(@PathVariable Long id) {
         return ResponseEntity.ok(workItemService.getWorkItemById(id));
