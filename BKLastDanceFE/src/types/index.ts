@@ -65,9 +65,9 @@ export interface WorkItem {
   startDate: Date;
   endDate: Date;
   type: WorkItemType;
-  projectId: string;
-  sprintId: string | null;
+  sprintId: number | null;
   epicId: string;
+  projectId: string;
   costs: Cost[];
   dependencies: number[]; // Array of WorkItem IDs this item depends on
   assignees: number[]; // Array of Person/TeamMember IDs assigned to this item
