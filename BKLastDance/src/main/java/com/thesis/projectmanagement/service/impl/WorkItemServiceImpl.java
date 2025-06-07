@@ -30,6 +30,13 @@ public class WorkItemServiceImpl implements WorkItemService {
                 .map(WorkItemMapper::toResponse)
                 .toList();
     }
+    @Override
+    public List<WorkItemResponse> getWorkItemsByProjectId(Long projectId) {
+        return workItemRepository.findByEpicProjectId(projectId)
+                .stream()
+                .map(WorkItemMapper::toResponse)
+                .toList();
+    }
 
     @Override
     public WorkItemResponse getWorkItemById(Long id) {
