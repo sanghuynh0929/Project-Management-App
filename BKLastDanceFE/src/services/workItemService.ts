@@ -8,6 +8,10 @@ export const workItemService = {
     const response = await api.get(`/api/workitems/epic/${epicId}`);
     return response.data;
   },
+  getWorkItemsByProject: async (projectId: number): Promise<WorkItem[]> => {
+    const response = await api.get(`/api/workitems/project/${projectId}`);
+    return response.data;
+  },
 
   getWorkItemById: async (id: string): Promise<WorkItem> => {
     const response = await api.get(`/api/workitems/${id}`);

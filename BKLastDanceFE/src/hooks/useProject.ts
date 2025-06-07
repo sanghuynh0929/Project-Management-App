@@ -1,127 +1,100 @@
-// src/hooks/useProject.ts
-import { useParams } from 'react-router-dom';
 import {
   useQuery,
-  useQueries,
-  useQueryClient,
   useMutation,
-  UseQueryResult,
+  useQueryClient,
 } from '@tanstack/react-query';
-import { useMemo } from 'react';
 
-import { epicService }        from '@/services/epicService';
-import { workItemService }    from '@/services/workItemService';
-import { sprintService }      from '@/services/sprintService';
-
-import { Epic, EpicRequest, Sprint, WorkItem } from '@/types';
+import { epicService } from '@/services/epicService';
+import {Cost, Epic, EpicRequest, Sprint, WorkItem} from '@/types';
 import { toast } from '@/hooks/use-toast';
+import {workItemService} from "@/services/workItemService.ts";
+import {sprintService} from "@/services/sprintService.ts";
+import {costService} from "@/services/costService.ts";
+import {useMemo} from "react";
 
-export function useProject(overrideProjectId?: number) {
-  /* 1️⃣  Xác định projectId */
-  const { projectId: routeId } = useParams<{ projectId: string }>();
-  const pid = overrideProjectId ?? (routeId ? Number(routeId) : undefined);
+/**
+ * useEpics – fetch + CRUD epics theo project hiện tại
+ *
+ *                            nếu bỏ trống sẽ đọc từ URL /epics/:projectId
+ * @param pid
+ */
+export function useProject(pid?: number) {
 
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
 
-  /* 2️⃣  Tải danh sách Epic */
-  const epicsQuery = useQuery<Epic[]>({
-    queryKey : ['epics', pid],
-    queryFn  : () => epicService.getEpicsByProject(pid!), // pid chắc chắn tồn tại nhờ enabled
-    enabled  : !!pid,
-    staleTime: 5 * 60_000,
+  /* 2️⃣  Fetch danh sách epics theo project */
+  const epicsQuery = useQuery({
+    queryKey: ['epics', pid],
+    enabled : !!pid,                              // chỉ chạy khi có id
+    queryFn : () => epicService.getEpicsByProject(pid!),
   });
 
-  const epics = epicsQuery.data;
+  const costsQuery   = useQuery({
+      queryKey: ['costs',   pid],
+      enabled: !!pid,
+      queryFn: () => costService.getCostsByProject(pid!)
+  });
 
-  /* 3️⃣  Tải WorkItems cho TỪNG Epic song song --------------- */
-  type WIQuery = { queryKey: readonly unknown[]; queryFn: () => Promise<WorkItem[]>; enabled: boolean; staleTime: number };
-
-  const wiQueriesConfig = useMemo(
-      () =>
-          epics.map<WIQuery>(epic => ({
-            queryKey : ['workItems', epic.id],
-            queryFn  : () => workItemService.getWorkItemsByEpic(epic.id),
-            staleTime: 5 * 60_000,
-            enabled  : !!epic.id,
-          })) as const,               // tuple readonly cho React-Query v5
-      [epics],
-  );
-
-  const wiQueries = useQueries({ queries: wiQueriesConfig });
-
-  /* Map workItems theo EpicId để tra cứu O(1) */
-  const workItemsByEpic: Record<number, WorkItem[]> = useMemo(() => {
-    const map: Record<number, WorkItem[]> = {};
-    wiQueries.forEach((q, idx) => {
-      const epicId = epics[idx]?.id;
-      if (epicId) map[epicId] = q.data ?? [];
-    });
-    return map;
-  }, [wiQueries, epics]);
-
-  /* 4️⃣  Tải Sprints của Project */
-  const sprintsQuery = useQuery<Sprint[]>({
+  const sprintsQuery = useQuery({
     queryKey : ['sprints', pid],
-    queryFn  : () => sprintService.getSprintsByProject(pid!),
     enabled  : !!pid,
-    staleTime: 5 * 60_000,
+    queryFn  : () => sprintService.getSprintsByProject(pid!),
   });
 
-  /* 5️⃣  CRUD Epic (sử dụng react-query mutation) ------------ */
-  const invalidateEpics = () => qc.invalidateQueries({ queryKey: ['epics', pid] });
+  const workItemsQuery = useQuery<WorkItem[]>({
+    queryKey : ["workItems", pid],
+    queryFn  : () => workItemService.getWorkItemsByProject(pid!),
+    enabled  : !!pid,
+  });
 
+  /* 3️⃣  Helper invalidation */
+  const invalidate = () =>
+      queryClient.invalidateQueries({ queryKey: ['epics', pid] });
+
+  /* 4️⃣  Create */
   const createEpic = useMutation({
-    mutationFn : (data: Omit<EpicRequest, 'projectId'>) =>
+    mutationFn: (data: Omit<EpicRequest, 'projectId'>) =>
         epicService.createEpic({ ...data, projectId: pid! }),
-    onSuccess  : () => {
-      invalidateEpics();
-      toast({ title: 'Epic created', description: 'Created successfully.' });
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Epic Created', description: 'Created successfully.' });
     },
-    onError    : () => toast({ title: 'Error', variant: 'destructive', description: 'Create failed.' }),
+    onError: () =>
+        toast({ title: 'Error', description: 'Create failed.', variant: 'destructive' }),
   });
 
+  /* 5️⃣  Update */
   const updateEpic = useMutation({
-    mutationFn : ({ id, data }: { id: string; data: Partial<Epic> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Partial<Epic> }) =>
         epicService.updateEpic(id, data),
-    onSuccess  : () => {
-      invalidateEpics();
-      toast({ title: 'Epic updated', description: 'Updated successfully.' });
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Epic Updated', description: 'Updated successfully.' });
     },
-    onError    : () => toast({ title: 'Error', variant: 'destructive', description: 'Update failed.' }),
+    onError: () =>
+        toast({ title: 'Error', description: 'Update failed.', variant: 'destructive' }),
   });
 
+  /* 6️⃣  Delete */
   const deleteEpic = useMutation({
-    mutationFn : (id: string) => epicService.deleteEpic(id),
-    onSuccess  : () => {
-      invalidateEpics();
-      toast({ title: 'Epic cancelled', description: 'Status set to Cancelled.' });
+    mutationFn: (id: string) => epicService.deleteEpic(id),
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Epic Deleted', description: 'Deleted successfully.' });
     },
-    onError    : () => toast({ title: 'Error', variant: 'destructive', description: 'Delete failed.' }),
+    onError: () =>
+        toast({ title: 'Error', description: 'Delete failed.', variant: 'destructive' }),
   });
 
-  /* 6️⃣  Tổng hợp trạng thái tải */
-  const isLoading =
-      epicsQuery.isLoading || wiQueries.some(q => q.isLoading) || sprintsQuery.isLoading;
-
-  const isError =
-      epicsQuery.isError || wiQueries.some(q => q.isError) || sprintsQuery.isError;
-
-  const error =
-      epicsQuery.error || wiQueries.find(q => q.error)?.error || sprintsQuery.error;
-
-  /* 7️⃣  Xuất ra cho component */
+  /* 7️⃣  Trả về tiện ích */
   return {
-    /* dữ liệu */
-    epics,
-    workItemsByEpic,
-    sprints        : sprintsQuery.data ?? [],
-
-    /* trạng thái */
-    isLoading,
-    isError,
-    error,
-
-    /* CRUD helpers */
+    epics      : epicsQuery.data ?? [],
+    sprints : sprintsQuery.data ?? [],
+    costs : costsQuery.data ?? [],
+    workItems : workItemsQuery.data,
+    isLoading  : epicsQuery.isLoading,
+    isError    : epicsQuery.isError,
+    error      : epicsQuery.error,
     createEpic : createEpic.mutate,
     updateEpic : updateEpic.mutate,
     deleteEpic : deleteEpic.mutate,

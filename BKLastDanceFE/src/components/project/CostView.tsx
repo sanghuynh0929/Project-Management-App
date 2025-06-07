@@ -1,4 +1,3 @@
-// src/components/project/CostView.tsx
 import React, { useMemo } from 'react';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -8,76 +7,64 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useParams } from 'react-router-dom';
 
 import { useProject } from '@/hooks/useProject';
-import type { WorkItem } from '@/types';
 
-/* ────────────────────────────────────────────────────────── */
+const COST_TYPES = ['Cloud Cost', 'Outsource', 'Other'] as const;
 
 export function CostView() {
-  /* Project ID */
   const { projectId } = useParams<{ projectId: string }>();
   const pid = Number(projectId);
 
-  /* Dữ liệu */
   const {
-    epics,
-    sprints,
-    workItemsByEpic,
-    isLoadingEpics,
-    isLoadingSprints,
-    isLoadingWorkItems,
-    isError,
-    error,
+    epics, sprints, workItems, costs,
+    isLoading, isError, error,
   } = useProject(pid);
 
-  /* Map workItemId → sprintId */
+  /* Map workItemId ➜ sprintId */
   const wiToSprint = useMemo<Record<number, number>>(() => {
     const m: Record<number, number> = {};
-    Object.values(workItemsByEpic).flat().forEach(wi => (m[wi.id] = wi.sprintId));
+    workItems.forEach(wi => { m[wi.id] = wi.sprintId; });
     return m;
-  }, [workItemsByEpic]);
+  }, [workItems]);
 
-  /* Tính chi phí */
-  const costTypes = ['Cloud Cost', 'Outsource', 'Other'] as const;
-
+  /* Gom chi phí theo [epic][type][sprint] */
   const costsByType = useMemo(() => {
-    const res: Record<number, Record<(typeof costTypes)[number], Record<number, number>>> = {};
-    epics.forEach(epic => {
-      const bucket = (res[epic.id] = { 'Cloud Cost': {}, Outsource: {}, Other: {} });
-      epic.costs?.forEach(c => {
-        const spId = wiToSprint[c.workItemId];
-        if (!spId) return;
-        bucket[c.type][spId] = (bucket[c.type][spId] ?? 0) + c.amount;
+    const r: Record<number,
+        Record<(typeof COST_TYPES)[number], Record<number, number>>> = {};
+    epics.forEach(e => {
+      r[e.id] = { 'Cloud Cost': {}, Outsource: {}, Other: {} };
+    });
+    costs.forEach(c => {
+      const spId = wiToSprint[c.workItemId];
+      if (!spId) return;                                  // workItem chưa có sprint
+      const bucket = r[c.epicId]?.[c.type];
+      if (bucket) bucket[spId] = (bucket[spId] ?? 0) + c.amount;
+    });
+    return r;
+  }, [costs, epics, wiToSprint]);
+
+  /* Tổng chi phí mỗi sprint */
+  const sprintTotals = useMemo(() => {
+    const res: Record<number, number> = {};
+    sprints.forEach(sp => (res[sp.id] = 0));
+    Object.values(costsByType).forEach(byType => {
+      Object.values(byType).forEach(bySprint => {
+        Object.entries(bySprint).forEach(([spId, amt]) => {
+          res[+spId] += amt;
+        });
       });
     });
     return res;
-  }, [epics, wiToSprint]);
-
-  const sprintTotals = useMemo(() => {
-    const r: Record<number, number> = {};
-    sprints.forEach(sp => (r[sp.id] = 0));
-    epics.forEach(e => {
-      Object.values(costsByType[e.id] || {}).forEach(bySprint => {
-        Object.entries(bySprint).forEach(([spId, amt]) => (r[+spId] += amt));
-      });
-    });
-    return r;
-  }, [sprints, epics, costsByType]);
+  }, [costsByType, sprints]);
 
   const grandTotal = useMemo(
-      () => Object.values(sprintTotals).reduce((s, v) => s + v, 0),
+      () => Object.values(sprintTotals).reduce((sum, v) => sum + v, 0),
       [sprintTotals],
   );
 
   /* UI states */
-  if (isError) {
-    return <p className="text-destructive p-4">{String(error)}</p>;
-  }
-  if (isLoadingEpics || isLoadingSprints || isLoadingWorkItems) {
-    return <Card className="p-6"><Skeleton className="h-64" /></Card>;
-  }
-  if (!epics.length || !sprints.length) {
-    return <p className="text-center py-8">No cost data.</p>;
-  }
+  if (isError) return <p className="text-destructive p-4">{String(error)}</p>;
+  if (isLoading) return <Card className="p-6"><Skeleton className="h-64" /></Card>;
+  if (!epics.length || !sprints.length) return <p className="text-center py-8">No cost data.</p>;
 
   /* Render */
   return (
@@ -90,7 +77,7 @@ export function CostView() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">Epic</TableHead>
-                  <TableHead className="w-[120px]">Cost Type</TableHead>
+                  <TableHead className="w-[130px]">Cost Type</TableHead>
                   {sprints.map(sp => (
                       <TableHead key={sp.id} className="text-center">{sp.name}</TableHead>
                   ))}
@@ -100,10 +87,10 @@ export function CostView() {
 
               <TableBody>
                 {epics.flatMap(epic =>
-                    costTypes.map(type => (
+                    COST_TYPES.map(type => (
                         <TableRow key={`${epic.id}-${type}`}>
                           {type === 'Cloud Cost' && (
-                              <TableCell rowSpan={costTypes.length} className="align-middle font-medium">
+                              <TableCell rowSpan={COST_TYPES.length} className="align-middle font-medium">
                                 {epic.title} <span className="text-xs text-muted-foreground">({epic.id})</span>
                               </TableCell>
                           )}
