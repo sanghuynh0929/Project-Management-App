@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { MainLayout } from '@/components/MainLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BacklogView } from '@/components/epics/BacklogView';
-import { ResourceView } from '@/components/epics/ResourceView';
-import { CostView } from '@/components/epics/CostView';
-import { TimelineView } from '@/components/epics/TimelineView';
+import { BacklogView } from '@/components/project/BacklogView.tsx';
+import { ResourceView } from '@/components/project/ResourceView.tsx';
+import { CostView } from '@/components/project/CostView.tsx';
+import { TimelineView } from '@/components/project/TimelineView.tsx';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {

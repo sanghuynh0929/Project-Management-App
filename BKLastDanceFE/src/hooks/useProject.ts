@@ -1,4 +1,4 @@
-// src/hooks/useEpics.ts
+// src/hooks/useProject.ts
 import { useParams } from 'react-router-dom';
 import {
   useQuery,
@@ -11,12 +11,12 @@ import { Epic, EpicRequest } from '@/types';
 import { toast } from '@/hooks/use-toast';
 
 /**
- * useEpics – fetch + CRUD epics theo project hiện tại
+ * useProject – fetch + CRUD epics theo project hiện tại
  *
  * @param overrideProjectId   (tuỳ chọn) truyền thẳng projectId;
  *                            nếu bỏ trống sẽ đọc từ URL /epics/:projectId
  */
-export function useEpics(overrideProjectId?: number) {
+export function useProject(overrideProjectId?: number) {
   /* 1️⃣  Xác định projectId */
   const { projectId: routeId } = useParams<{ projectId: string }>();
   const pid = overrideProjectId ?? (routeId ? Number(routeId) : undefined);

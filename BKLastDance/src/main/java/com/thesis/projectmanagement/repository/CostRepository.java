@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface CostRepository extends JpaRepository<Cost, Long> {
     List<Cost> findByEpicId(Long epicId);
+    List<Cost> findByEpicProjectId(Long projectId);
 }

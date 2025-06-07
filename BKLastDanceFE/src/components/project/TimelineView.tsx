@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Skeleton }                     from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card.tsx';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.tsx';
+import { Skeleton }                     from '@/components/ui/skeleton.tsx';
 import { useQuery }                     from '@tanstack/react-query';
 import { useParams }                    from 'react-router-dom';
-import { formatDate }                   from '@/utils/date';
-import { epicService }                  from '@/services/epicService';
-import { sprintService }                from '@/services/sprintService';
+import { formatDate }                   from '@/utils/date.ts';
+import { epicService }                  from '@/services/epicService.ts';
+import { sprintService }                from '@/services/sprintService.ts';
 import { Epic, Sprint }                 from '@/types';
 
 export function TimelineView() {

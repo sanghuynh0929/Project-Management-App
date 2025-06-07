@@ -1,6 +1,6 @@
 package com.thesis.projectmanagement.service.impl;
 
-import com.thesis.projectmanagement.dto.cost.CostResponse;
+import com.thesis.projectmanagement.dto.cost.CostDto;
 import com.thesis.projectmanagement.dto.cost.CostRequest;
 import com.thesis.projectmanagement.mapper.CostMapper;
 import com.thesis.projectmanagement.model.Cost;
@@ -24,13 +24,21 @@ public class CostServiceImpl implements CostService {
     private final WorkItemRepository workItemRepository;
 
     @Override
-    public List<CostResponse> getCostsByEpicId(Long epicId) {
+    public List<CostDto> getCostsByEpicId(Long epicId) {
         return costRepository.findByEpicId(epicId)
                 .stream().map(CostMapper::toResponse).toList();
     }
 
     @Override
-    public CostResponse createCost(CostRequest request) {
+    public List<CostDto> getCostsByProjectId(Long projectId) {
+        return costRepository.findByEpicProjectId(projectId)
+                .stream()
+                .map(CostMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public CostDto createCost(CostRequest request) {
         Epic epic = epicRepository.findById(request.getEpicId()).orElse(null);
         WorkItem workItem = workItemRepository.findById(request.getWorkItemId()).orElse(null);
         Cost cost = CostMapper.fromRequest(request);

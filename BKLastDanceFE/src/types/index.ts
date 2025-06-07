@@ -54,8 +54,8 @@ export interface Cost {
   name: string;
   type: 'Cloud' | 'Outsource' | 'Other';
   amount: number;
-  sprintId: number;
-  workItemId?: string; // Add workItemId for Cost relationship
+  epicId: number;
+  workItemId?: number; // Add workItemId for Cost relationship
 }
 
 export interface WorkItem {
