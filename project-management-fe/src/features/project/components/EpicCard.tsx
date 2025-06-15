@@ -19,6 +19,11 @@ interface EpicCardProps {
     workItemCount: number;
     assignedPeople: number;
     totalCost: number;
+    progress: {
+      done: number;
+      inProgress: number;
+      todo: number;
+    };
   };
   onClick: (epicId: number) => void;
   onEdit: (epic: any) => void;
@@ -92,6 +97,33 @@ const EpicCard: React.FC<EpicCardProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Progress:</span>
+              <span className="text-gray-900">
+                {epic.progress.done}% Complete
+              </span>
+            </div>
+            <div className="h-2 flex rounded-full overflow-hidden">
+              <div 
+                className="bg-green-500" 
+                style={{ width: `${epic.progress.done}%` }}
+              />
+              <div 
+                className="bg-blue-500" 
+                style={{ width: `${epic.progress.inProgress}%` }}
+              />
+              <div 
+                className="bg-gray-200" 
+                style={{ width: `${epic.progress.todo}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>{epic.progress.inProgress}% In Progress</span>
+              <span>{epic.progress.todo}% Todo</span>
+            </div>
+          </div>
+
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Duration:</span>
             <span className="text-gray-900">

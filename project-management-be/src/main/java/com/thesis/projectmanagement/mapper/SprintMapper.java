@@ -1,6 +1,5 @@
 package com.thesis.projectmanagement.mapper;
 
-import com.thesis.projectmanagement.constants.SprintStatus;
 import com.thesis.projectmanagement.dto.SprintDTO;
 import com.thesis.projectmanagement.model.Sprint;
 import com.thesis.projectmanagement.repository.ProjectRepository;

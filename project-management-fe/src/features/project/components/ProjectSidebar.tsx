@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button.tsx';
+import { Separator } from '@/components/ui/separator.tsx';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Users, DollarSign, Columns3, ListTodo, GitBranch } from 'lucide-react';
 

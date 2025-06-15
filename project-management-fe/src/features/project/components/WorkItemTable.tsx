@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 import { MoreVertical } from 'lucide-react';
+import { epicService } from '@/services/epicService';
 
 interface WorkItem {
   id: number;
@@ -23,6 +24,7 @@ interface WorkItem {
   type: string;
   priority: string;
   status: string;
+  epicId: number | null;
 }
 
 interface WorkItemTableProps {
@@ -31,16 +33,47 @@ interface WorkItemTableProps {
   onDelete: (workItemId: number) => void;
 }
 
+interface EpicCache {
+  [key: number]: string;
+}
+
 const WorkItemTable: React.FC<WorkItemTableProps> = ({
   workItems,
   onEdit,
   onDelete,
 }) => {
+  const [epicNames, setEpicNames] = useState<EpicCache>({});
+
+  useEffect(() => {
+    const fetchEpicNames = async () => {
+      const epicIds = [...new Set(workItems
+        .map(item => item.epicId)
+        .filter((id): id is number => id !== null)
+      )];
+
+      const newEpicNames: EpicCache = {};
+      await Promise.all(
+        epicIds.map(async (epicId) => {
+          try {
+            const { data: epic } = await epicService.getById(epicId);
+            newEpicNames[epicId] = epic.title;
+          } catch (err) {
+            console.error(`Error fetching epic ${epicId}:`, err);
+          }
+        })
+      );
+      setEpicNames(newEpicNames);
+    };
+
+    fetchEpicNames();
+  }, [workItems]);
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Title</TableHead>
+          <TableHead>Epic</TableHead>
           <TableHead>Type</TableHead>
           <TableHead>Priority</TableHead>
           <TableHead>Status</TableHead>
@@ -50,7 +83,7 @@ const WorkItemTable: React.FC<WorkItemTableProps> = ({
       <TableBody>
         {workItems.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={5} className="text-center text-gray-500">
+            <TableCell colSpan={6} className="text-center text-gray-500">
               No work items found
             </TableCell>
           </TableRow>
@@ -58,6 +91,9 @@ const WorkItemTable: React.FC<WorkItemTableProps> = ({
           workItems.map((workItem) => (
             <TableRow key={workItem.id}>
               <TableCell className="font-medium">{workItem.title}</TableCell>
+              <TableCell className="text-sm text-gray-600">
+                {workItem.epicId ? epicNames[workItem.epicId] || '...' : '-'}
+              </TableCell>
               <TableCell>
                 <Badge variant="outline" className={
                   workItem.type === 'STORY' ? 'bg-purple-50 text-purple-700 border-purple-200' :

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { workItemService } from '@/services/workItemService';
 import { sprintService } from '@/services/sprintService';
+import { epicService } from '@/services/epicService';
 import type { WorkItem, Sprint } from '@/lib/types';
 
 interface EditWorkItemDialogProps {
@@ -20,6 +21,11 @@ interface EditWorkItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+}
+
+interface Epic {
+  id: number;
+  title: string;
 }
 
 const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
@@ -36,23 +42,30 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
   const [priority, setPriority] = useState<WorkItem['priority']>('MEDIUM');
   const [status, setStatus] = useState<WorkItem['status']>('TODO');
   const [sprintId, setSprintId] = useState<WorkItem['sprintId']>(null);
+  const [epicId, setEpicId] = useState<WorkItem['epicId']>(null);
   const [location, setLocation] = useState<WorkItem['location']>('BACKLOG');
   const [availableSprints, setAvailableSprints] = useState<Sprint[]>([]);
+  const [availableEpics, setAvailableEpics] = useState<Epic[]>([]);
   const [initialStatus, setInitialStatus] = useState<WorkItem['status']>('TODO');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all sprints for the project
-        const { data: sprintsData } = await sprintService.getByProjectId(workItem.projectId);
+        // Fetch all sprints and epics for the project
+        const [sprintsRes, epicsRes] = await Promise.all([
+          sprintService.getByProjectId(workItem.projectId),
+          epicService.getByProjectId(workItem.projectId)
+        ]);
+
         // Filter to include active and not started sprints
-        const availableSprintsData = sprintsData.filter((sprint: Sprint) => 
+        const availableSprintsData = sprintsRes.data.filter((sprint: Sprint) => 
           sprint.status === 'ACTIVE' || sprint.status === 'NOT_STARTED'
         );
         setAvailableSprints(availableSprintsData);
+        setAvailableEpics(epicsRes.data);
       } catch (err) {
-        console.error('Error fetching sprints:', err);
-        setError('Failed to load sprints. Please try again.');
+        console.error('Error fetching data:', err);
+        setError('Failed to load data. Please try again.');
       }
     };
 
@@ -67,6 +80,7 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
       setInitialStatus(workItem.status);
       setLocation(workItem.location);
       setSprintId(workItem.sprintId);
+      setEpicId(workItem.epicId);
     }
   }, [open, workItem]);
 
@@ -85,7 +99,7 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
         location,
         sprintId: location === 'BACKLOG' ? null : sprintId,
         projectId: workItem.projectId,
-        epicId: workItem.epicId,
+        epicId,
         storyPoints: workItem.storyPoints
       };
 
@@ -100,6 +114,15 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
     }
   };
 
+  const handleStatusChange = (newStatus: WorkItem['status']) => {
+    setStatus(newStatus);
+    if (newStatus === 'DONE') {
+      setLocation('COMPLETED');
+    } else {
+      setLocation(sprintId === null ? 'BACKLOG' : 'SPRINT');
+    }
+  };
+
   const getLocationDisplayValue = () => {
     if (status === 'DONE') {
       return 'Completed';
@@ -108,6 +131,13 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
       return 'Backlog';
     }
     return availableSprints.find(s => s.id === sprintId)?.name || 'Backlog';
+  };
+
+  const getEpicDisplayValue = () => {
+    if (epicId === null) {
+      return 'No Epic';
+    }
+    return availableEpics.find(e => e.id === epicId)?.title || 'No Epic';
   };
 
   return (
@@ -185,14 +215,7 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
               <Label htmlFor="status">Status</Label>
               <Select 
                 value={status} 
-                onValueChange={(newStatus: WorkItem['status']) => {
-                  setStatus(newStatus);
-                  if (newStatus === 'DONE') {
-                    setLocation('COMPLETED');
-                  } else {
-                    setLocation(sprintId === null ? 'BACKLOG' : 'SPRINT');
-                  }
-                }}
+                onValueChange={handleStatusChange}
               >
                 <SelectTrigger disabled={loading || initialStatus === 'DONE'}>
                   <SelectValue placeholder="Select status" />
@@ -206,39 +229,68 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sprintId">Location</Label>
+              <Label htmlFor="epic">Epic</Label>
               <Select 
-                value={status === 'DONE' ? 'completed' : (sprintId === null ? 'backlog' : availableSprints.find(s => s.id === sprintId)?.name || 'backlog')}
+                value={epicId === null ? 'no-epic' : availableEpics.find(e => e.id === epicId)?.title || 'no-epic'}
                 onValueChange={(value) => {
-                  if (value === 'backlog') {
-                    setSprintId(null);
-                    setLocation('BACKLOG');
-                  } else if (value !== 'completed') {
-                    const selectedSprint = availableSprints.find(s => s.name === value);
-                    if (selectedSprint) {
-                      setSprintId(selectedSprint.id);
-                      setLocation('SPRINT');
+                  if (value === 'no-epic') {
+                    setEpicId(null);
+                  } else {
+                    const selectedEpic = availableEpics.find(e => e.title === value);
+                    if (selectedEpic) {
+                      setEpicId(selectedEpic.id);
                     }
                   }
                 }}
               >
-                <SelectTrigger disabled={status === 'DONE' || loading}>
-                  <SelectValue>{getLocationDisplayValue()}</SelectValue>
+                <SelectTrigger disabled={loading}>
+                  <SelectValue>{getEpicDisplayValue()}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {status !== 'DONE' && (
-                    <>
-                      <SelectItem value="backlog">Backlog</SelectItem>
-                      {availableSprints.map((sprint) => (
-                        <SelectItem key={sprint.id} value={sprint.name}>
-                          {sprint.name} ({sprint.status === 'ACTIVE' ? 'Active' : 'Not Started'})
-                        </SelectItem>
-                      ))}
-                    </>
-                  )}
+                  <SelectItem value="no-epic">No Epic</SelectItem>
+                  {availableEpics.map((epic) => (
+                    <SelectItem key={epic.id} value={epic.title}>
+                      {epic.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sprintId">Location</Label>
+            <Select 
+              value={status === 'DONE' ? 'completed' : (sprintId === null ? 'backlog' : availableSprints.find(s => s.id === sprintId)?.name || 'backlog')}
+              onValueChange={(value) => {
+                if (value === 'backlog') {
+                  setSprintId(null);
+                  setLocation('BACKLOG');
+                } else if (value !== 'completed') {
+                  const selectedSprint = availableSprints.find(s => s.name === value);
+                  if (selectedSprint) {
+                    setSprintId(selectedSprint.id);
+                    setLocation('SPRINT');
+                  }
+                }
+              }}
+            >
+              <SelectTrigger disabled={status === 'DONE' || loading}>
+                <SelectValue>{getLocationDisplayValue()}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {status !== 'DONE' && (
+                  <>
+                    <SelectItem value="backlog">Backlog</SelectItem>
+                    {availableSprints.map((sprint) => (
+                      <SelectItem key={sprint.id} value={sprint.name}>
+                        {sprint.name} ({sprint.status === 'ACTIVE' ? 'Active' : 'Not Started'})
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           {error && (
@@ -256,7 +308,6 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700"
               disabled={loading}
             >
               {loading ? 'Saving...' : 'Save Changes'}

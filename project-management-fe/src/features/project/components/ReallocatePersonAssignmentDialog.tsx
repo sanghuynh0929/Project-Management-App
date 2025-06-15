@@ -99,25 +99,39 @@ const ReallocatePersonAssignmentDialog: React.FC<ReallocatePersonAssignmentDialo
     setError(null);
 
     try {
-      // Create new work item assignment
-      await personAssignmentService.create({
-        personId,
-        workItemId: selectedWorkItemId,
-        epicId: null,
-        hours: hoursToAllocate,
-        description: `Reallocated ${hoursToAllocate}h from epic assignment`,
-      });
+      // Check for existing work item assignment
+      const { data: existingAssignments } = await personAssignmentService.getByWorkItemId(selectedWorkItemId!);
+      const existingWorkItemAssignment = existingAssignments.find(
+        (pa: PersonAssignment) => pa.personId === personId && pa.workItemId === selectedWorkItemId
+      );
 
-      // If allocating more hours than remaining, or equal hours, delete the epic assignment
-      if (hoursToAllocate >= remainingHours) {
-        await personAssignmentService.delete(epicAssignment!.id);
+      // Update or create work item assignment
+      if (existingWorkItemAssignment) {
+        await personAssignmentService.update(existingWorkItemAssignment.id, {
+          ...existingWorkItemAssignment,
+          hours: existingWorkItemAssignment.hours + hoursToAllocate,
+          description: `${existingWorkItemAssignment.description || ''}\nAdded ${hoursToAllocate}h from epic assignment`,
+        });
       } else {
-        // Otherwise update epic assignment with remaining hours
-        const newRemainingHours = remainingHours - hoursToAllocate;
+        await personAssignmentService.create({
+          personId,
+          workItemId: selectedWorkItemId,
+          epicId: null,
+          hours: hoursToAllocate,
+          description: `Reallocated ${hoursToAllocate}h from epic assignment`,
+        });
+      }
+
+      // Update epic assignment with remaining hours
+      const newRemainingHours = Math.max(remainingHours - hoursToAllocate, 0);
+      if (newRemainingHours > 0) {
         await personAssignmentService.update(epicAssignment!.id, {
           ...epicAssignment,
           hours: newRemainingHours,
         });
+      } else if (newRemainingHours === 0) {
+        // Only delete if exactly 0 hours remain
+        await personAssignmentService.delete(epicAssignment!.id);
       }
 
       onSuccess();

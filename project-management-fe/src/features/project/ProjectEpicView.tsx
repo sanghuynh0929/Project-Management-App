@@ -13,6 +13,23 @@ interface EpicViewProps {
   projectId: number;
 }
 
+const calculateProgress = (workItems: any[]) => {
+  if (workItems.length === 0) {
+    return { done: 0, inProgress: 0, todo: 100 };
+  }
+
+  const done = workItems.filter(item => item.status === 'DONE').length;
+  const inProgress = workItems.filter(item => item.status === 'IN_PROGRESS').length;
+  const todo = workItems.filter(item => item.status === 'TODO').length;
+
+  const total = workItems.length;
+  return {
+    done: Math.round((done / total) * 100),
+    inProgress: Math.round((inProgress / total) * 100),
+    todo: Math.round((todo / total) * 100)
+  };
+};
+
 const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
   const navigate = useNavigate();
   const { projectId: paramProjectId } = useParams();
@@ -39,6 +56,9 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
 
             const assignedPeople = personAssignments.length;
             
+            // Calculate progress based on work items
+            const progress = calculateProgress(workItems);
+            
             // Get epic-level cost assignments
             const epicCostIds = costAssignments.map((ca: any) => ca.costId);
             
@@ -62,11 +82,13 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
               );
               totalCost = costResArr.reduce((sum: number, res: any) => sum + (res.data.amount || 0), 0);
             }
+
             return {
               ...epic,
               workItemCount: workItems.length,
               assignedPeople,
               totalCost,
+              progress
             };
           })
         );
@@ -110,6 +132,9 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
 
         const assignedPeople = personAssignments.length;
         
+        // Calculate progress based on work items
+        const progress = calculateProgress(workItems);
+        
         // Get epic-level cost assignments
         const epicCostIds = costAssignments.map((ca: any) => ca.costId);
         
@@ -139,6 +164,7 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
           workItemCount: workItems.length,
           assignedPeople,
           totalCost,
+          progress
         };
       })
     );

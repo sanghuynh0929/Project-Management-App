@@ -6,16 +6,29 @@ import { sprintService } from '@/services/sprintService';
 import { personService } from '@/services/personService';
 import CreatePersonAssignmentDialog from './components/CreatePersonAssignmentDialog';
 import ReallocatePersonAssignmentDialog from './components/ReallocatePersonAssignmentDialog';
-import ResourceHeader from './components/ResourceHeader';
+import SprintFilterDialog from './components/SprintFilterDialog';
 import ResourceSummary from './components/ResourceSummary';
-import EpicSprintTable from './components/EpicSprintTable';
+import EpicSprintHoursTable from './components/EpicSprintHoursTable';
 import PersonSprintTable from './components/PersonSprintTable';
+import { Button } from '@/components/ui/button';
+import { Filter } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface ResourceViewProps {
   projectId: number;
 }
 
 const DEFAULT_BASE_FTE = 5.7;
+const SPRINT_FILTER_KEY = 'projectResourceSprintFilter';
+const DEFAULT_BACKLOG_DAYS = 14;
+
+const calculateDaysFromDates = (startDate: string, endDate: string) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
 
 const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
   const [epicResourceData, setEpicResourceData] = useState<any[]>([]);
@@ -23,6 +36,7 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({ totalHours: 0, teamMembers: 0, avgHoursPerSprint: 0 });
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showSprintFilterDialog, setShowSprintFilterDialog] = useState(false);
   const [baseFte, setBaseFte] = useState(DEFAULT_BASE_FTE);
   const [reallocationData, setReallocationData] = useState<{
     epicId: number;
@@ -31,6 +45,31 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
     epicAssignment: any;
   } | null>(null);
   const [personNames, setPersonNames] = useState<Record<number, string>>({});
+  const [selectedSprintIds, setSelectedSprintIds] = useState<number[]>(() => {
+    const saved = localStorage.getItem(`${SPRINT_FILTER_KEY}_${projectId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(`${SPRINT_FILTER_KEY}_${projectId}`, JSON.stringify(selectedSprintIds));
+  }, [selectedSprintIds, projectId]);
+
+  // Initialize selected sprints with active sprints if none selected
+  useEffect(() => {
+    const initializeSelectedSprints = async () => {
+      if (selectedSprintIds.length === 0) {
+        try {
+          const sprintsRes = await sprintService.getByProjectId(projectId);
+          const activeSprints = sprintsRes.data.filter((s: any) => s.status === 'ACTIVE');
+          setSelectedSprintIds(activeSprints.map((s: any) => s.id));
+        } catch (err) {
+          console.error('Error initializing sprints:', err);
+        }
+      }
+    };
+
+    initializeSelectedSprints();
+  }, [projectId]);
 
   const fetchPersonNames = async (personIds: number[]) => {
     try {
@@ -54,15 +93,35 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
     setLoading(true);
     try {
       // 1. Fetch all epics and work items for the project
-      const [epicsRes, workItemsRes] = await Promise.all([
+      const [epicsRes, workItemsRes, sprintsRes] = await Promise.all([
         epicService.getByProjectId(projectId),
         workItemService.getByProjectId(projectId),
+        sprintService.getByProjectId(projectId),
       ]);
       const epics = epicsRes.data;
       const workItems = workItemsRes.data;
+      const sprints = sprintsRes.data;
+
+      // Sort sprints by start date ascending
+      const sortedSprints = [...sprints].sort((a, b) => {
+        if (!a.startDate) return 1;  // Sprints without start date go to the end
+        if (!b.startDate) return -1;
+        return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      });
+
+      // Initialize selected sprints if empty (first load)
+      if (selectedSprintIds.length === 0) {
+        const activeSprints = sortedSprints.filter((s: any) => s.status === 'ACTIVE');
+        setSelectedSprintIds(activeSprints.map((s: any) => s.id));
+      }
+
+      // Filter work items by selected sprints
+      const filteredWorkItems = workItems.filter((wi: any) => 
+        !wi.sprintId || selectedSprintIds.includes(wi.sprintId)
+      );
 
       // Get all work item and epic IDs
-      const allProjectWorkItemIds = workItems.map((wi: any) => wi.id);
+      const allProjectWorkItemIds = filteredWorkItems.map((wi: any) => wi.id);
       const allProjectEpicIds = epics.map((epic: any) => epic.id);
 
       // Get all assignments
@@ -86,70 +145,98 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
       const epicData = await Promise.all(
         epics.map(async (epic: any) => {
           // Work items for this epic
-          const epicWorkItems = workItems.filter((wi: any) => wi.epicId === epic.id);
+          const epicWorkItems = filteredWorkItems.filter((wi: any) => wi.epicId === epic.id);
+          const backlogWorkItems = workItems.filter((wi: any) => wi.epicId === epic.id && wi.location === 'BACKLOG');
+          
           // Person assignments for epic
           const epicPersonAssignments = allProjectEpicAssignments.filter(pa => pa.epicId === epic.id);
+          
           // Person assignments for each work item
           const workItemPersonAssignmentsArr = epicWorkItems.map(wi => 
+            allProjectWorkItemAssignments.filter(pa => pa.workItemId === wi.id)
+          );
+          
+          const backlogPersonAssignmentsArr = backlogWorkItems.map(wi =>
             allProjectWorkItemAssignments.filter(pa => pa.workItemId === wi.id)
           );
 
           // Map sprints
           const sprints = Array.from(new Set(epicWorkItems.map((wi: any) => wi.sprintName || 'Sprint')));
+          
           // Fetch sprint start/end dates for each unique sprint name (if possible)
           const sprintIdMap: Record<string, number> = {};
           epicWorkItems.forEach((wi: any) => {
             if (wi.sprintName && wi.sprintId) sprintIdMap[wi.sprintName] = wi.sprintId;
           });
-          const sprintDates: Record<string, { startDate?: string; endDate?: string }> = {};
+          const sprintDates: Record<string, { startDate?: string; endDate?: string; days?: number }> = {};
           await Promise.all(Object.entries(sprintIdMap).map(async ([sprintName, sprintId]) => {
             try {
               const sprintRes = await sprintService.getById(sprintId);
+              const sprint = sprintRes.data;
+              const days = calculateDaysFromDates(sprint.startDate, sprint.endDate);
               sprintDates[sprintName] = {
-                startDate: sprintRes.data.startDate,
-                endDate: sprintRes.data.endDate,
+                startDate: sprint.startDate,
+                endDate: sprint.endDate,
+                days,
               };
             } catch {}
           }));
 
           // Table 1: Hours by Epic and Person (by sprint)
-          // For each sprint, sum all person assignments for work items in that sprint
           const sprintRows = sprints.map((sprintName: string) => {
             const sprintWorkItems = epicWorkItems.filter((wi: any) => (wi.sprintName || 'Sprint') === sprintName);
             const assignments = sprintWorkItems.flatMap((wi: any, idx: number) => workItemPersonAssignmentsArr[epicWorkItems.indexOf(wi)]);
             const totalHours = assignments.reduce((sum: number, pa: any) => sum + (pa.hours || 0), 0);
-            const fte = baseFte > 0 ? totalHours / baseFte : 0;
             const dates = sprintDates[sprintName];
+            const sprintDays = dates?.days || DEFAULT_BACKLOG_DAYS;
+            const fte = (baseFte > 0 && sprintDays > 0) ? totalHours / (baseFte * sprintDays) : 0;
             let sprintLabel = sprintName;
             if (dates && dates.startDate && dates.endDate) {
-              sprintLabel = `${sprintName} (${new Date(dates.startDate).toLocaleDateString()} - ${new Date(dates.endDate).toLocaleDateString()})`;
+              sprintLabel = `${sprintName} (${new Date(dates.startDate).toDateString()} - ${new Date(dates.endDate).toDateString()})`;
             }
             return {
               sprintName: sprintLabel,
               totalHours: Number(totalHours.toFixed(1)),
-              fte: Number(fte.toFixed(1)),
+              fte: Number(fte.toFixed(2)),
               assignments,
             };
           });
 
-          const workItemPersonIds = new Set(workItemPersonAssignmentsArr.flatMap(assignments => assignments.map((pa: any) => pa.personId)));
-          const epicOnlyAssignments = epicPersonAssignments.filter((pa: any) => !workItemPersonIds.has(pa.personId));
-          const epicOnlyHours = epicOnlyAssignments.reduce((sum: number, pa: any) => sum + (pa.hours || 0), 0);
-          const epicOnlyFte = baseFte > 0 ? epicOnlyHours / baseFte : 0;
-          const totalEpicHours = sprintRows.reduce((sum, s) => sum + s.totalHours, 0) + Number(epicOnlyHours.toFixed(1));
-          const totalEpicFte = baseFte > 0 ? totalEpicHours / baseFte : 0;
+          // Add backlog row
+          const backlogAssignments = backlogPersonAssignmentsArr.flat();
+          const backlogTotalHours = backlogAssignments.reduce((sum: number, pa: any) => sum + (pa.hours || 0), 0);
+          const backlogFte = (baseFte > 0) ? backlogTotalHours / (baseFte * DEFAULT_BACKLOG_DAYS) : 0;
+          
+          const backlogRow = {
+            sprintName: 'Backlog',
+            totalHours: Number(backlogTotalHours.toFixed(1)),
+            fte: Number(backlogFte.toFixed(2)),
+            assignments: backlogAssignments,
+          };
+
+          const workItemPersonIds = new Set([
+            ...workItemPersonAssignmentsArr.flatMap(assignments => assignments.map((pa: any) => pa.personId)),
+            ...backlogPersonAssignmentsArr.flatMap(assignments => assignments.map((pa: any) => pa.personId))
+          ]);
+          
+          const epicPersonHours = epicPersonAssignments.reduce((sum: number, pa: any) => sum + (pa.hours || 0), 0);
+          const epicPersonFte = (baseFte > 0) ? epicPersonHours / (baseFte * DEFAULT_BACKLOG_DAYS) : 0;
+          
+          const allSprintRows = [...sprintRows, backlogRow];
+          const totalEpicHours = allSprintRows.reduce((sum, s) => sum + s.totalHours, 0) + Number(epicPersonHours.toFixed(1));
+          const totalEpicFte = (baseFte > 0) ? totalEpicHours / (baseFte * DEFAULT_BACKLOG_DAYS) : 0;
 
           return {
             epicName: epic.title,
             id: epic.id,
-            sprints: sprintRows,
+            sprints: allSprintRows,
             epicOnly: {
-              totalHours: Number(epicOnlyHours.toFixed(1)),
-              fte: Number(epicOnlyFte.toFixed(1)),
-              assignments: epicOnlyAssignments,
+              totalHours: Number(epicPersonHours.toFixed(1)),
+              fte: Number(epicPersonFte.toFixed(2)),
+              assignments: epicPersonAssignments,
             },
             totalEpicHours: Number(totalEpicHours.toFixed(1)),
-            totalEpicFte: Number(totalEpicFte.toFixed(1)),
+            totalEpicFte: Number(totalEpicFte.toFixed(2)),
           };
         })
       );
@@ -157,73 +244,73 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
       setEpicResourceData(epicData);
 
       // Table 2: Person by Sprint
-      const allProjectSprints = Array.from(new Set(workItems.map((wi: any) => wi.sprintName || 'Sprint')));
-      // Map sprint name to timeline (fetch dates)
-      const allSprintIdMap: Record<string, number> = {};
-      workItems.forEach((wi: any) => {
-        if (wi.sprintName && wi.sprintId) allSprintIdMap[wi.sprintName] = wi.sprintId;
-      });
-      const allSprintDates: Record<string, { startDate?: string; endDate?: string }> = {};
-      await Promise.all(Object.entries(allSprintIdMap).map(async ([sprintName, sprintId]) => {
-        try {
-          const sprintRes = await sprintService.getById(sprintId);
-          allSprintDates[sprintName] = {
-            startDate: sprintRes.data.startDate,
-            endDate: sprintRes.data.endDate,
-          };
-        } catch {}
-      }));
+      // Get selected sprints sorted by start date
+      const selectedSprints = sortedSprints
+        .filter(s => selectedSprintIds.includes(s.id));
 
       // For each person, sum across all epics
       const personRows = await Promise.all(Array.from(allPersonIds).map(async (personId: number) => {
-        // For each sprint in the project
-        const sprintHours = allProjectSprints.map((sprintName: string) => {
+        // For each selected sprint, calculate hours
+        const sprintHours = selectedSprints.map((sprint) => {
           // All assignments for this person in this sprint (across all work items in this project)
-          const assignments = workItems
-            .filter((wi: any) => (wi.sprintName || 'Sprint') === sprintName)
+          const assignments = filteredWorkItems
+            .filter((wi: any) => wi.sprintId === sprint.id)
             .flatMap((wi: any) => allProjectWorkItemAssignments.filter((pa: any) => pa.workItemId === wi.id && pa.personId === personId));
+          
           const totalHours = assignments.reduce((sum: number, pa: any) => sum + (pa.hours || 0), 0);
-          const fte = baseFte > 0 ? totalHours / baseFte : 0;
-          const dates = allSprintDates[sprintName];
-          let sprintLabel = sprintName;
-          if (dates && dates.startDate && dates.endDate) {
-            sprintLabel = `${sprintName} (${new Date(dates.startDate).toLocaleDateString()} - ${new Date(dates.endDate).toLocaleDateString()})`;
-          }
+          const days = calculateDaysFromDates(sprint.startDate, sprint.endDate);
+          const fte = (baseFte > 0 && days > 0) ? totalHours / (baseFte * days) : 0;
+          
           return {
-            sprintName: sprintLabel,
+            sprintId: sprint.id,
+            sprintName: `${sprint.name} (${new Date(sprint.startDate).toDateString()} - ${new Date(sprint.endDate).toDateString()})`,
             totalHours: Number(totalHours.toFixed(1)),
-            fte: Number(fte.toFixed(1)),
+            fte: Number(fte.toFixed(2)),
           };
         });
 
         // Epic-specific allocation for this person
         const epicOnlyAssignments = allProjectEpicAssignments.filter((pa: any) => pa.personId === personId);
         const epicOnlyHours = epicOnlyAssignments.reduce((sum: number, pa: any) => sum + (pa.hours || 0), 0);
+        const epicOnlyFte = (baseFte > 0) ? epicOnlyHours / (baseFte * DEFAULT_BACKLOG_DAYS) : 0;
         const total = sprintHours.reduce((sum: number, s: any) => sum + s.totalHours, 0) + Number(epicOnlyHours.toFixed(1));
+        const totalFte = (baseFte > 0) ? total / (baseFte * DEFAULT_BACKLOG_DAYS) : 0;
 
         return {
           personId,
           personName: getPersonName(personId),
           sprintHours,
           epicOnlyHours: Number(epicOnlyHours.toFixed(1)),
+          epicOnlyFte: Number(epicOnlyFte.toFixed(2)),
           total: Number(total.toFixed(1)),
+          totalFte: Number(totalFte.toFixed(2)),
         };
       }));
 
       // Sort person rows by name
       personRows.sort((a, b) => a.personName.localeCompare(b.personName));
 
-      setPersonBySprintData([{
-        sprints: allProjectSprints.map((sprintName: string) => {
-          const dates = allSprintDates[sprintName];
-          let sprintLabel = sprintName;
-          if (dates && dates.startDate && dates.endDate) {
-            sprintLabel = `${sprintName} (${new Date(dates.startDate).toDateString()} - ${new Date(dates.endDate).toDateString()})`;
-          }
-          return sprintLabel;
-        }),
-        personRows
-      }]);
+      // Get selected sprints for the table header
+      const selectedSprintsForHeader = selectedSprints
+        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+        .map(sprint => ({
+          id: sprint.id,
+          name: sprint.name,
+          label: `${sprint.name} (${new Date(sprint.startDate).toDateString()} - ${new Date(sprint.endDate).toDateString()})`,
+        }));
+
+      const personBySprintDataToSet = [{
+        sprints: selectedSprintsForHeader,
+        personRows: personRows.map(row => ({
+          ...row,
+          personName: personNames[row.personId] || `Person ${row.personId}`, // Ensure person name is set
+        }))
+      }];
+
+      console.log('Person names mapping:', personNames);
+      console.log('Person rows with names:', personBySprintDataToSet[0].personRows);
+
+      setPersonBySprintData(personBySprintDataToSet);
 
       // Summary calculations
       const totalHours = epicData.reduce((sum, e) => sum + e.totalEpicHours, 0);
@@ -253,51 +340,57 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
 
   useEffect(() => {
     fetchData();
-  }, [projectId]);
-
-  if (loading) {
-    return <div className="text-center text-gray-500">Loading resources...</div>;
-  }
+  }, [projectId, selectedSprintIds]);
 
   return (
-    <div className="p-6">
-      <ResourceHeader
-        baseFte={baseFte}
-        onBaseFteChange={(value) => {
-          setBaseFte(value);
-          fetchData();
-        }}
-        onAssignPerson={() => setShowCreateDialog(true)}
-      />
+    <div className="p-6 space-y-4">
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Resource Management</h1>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Hours per day (FTE basis):</label>
+            <input
+              type="number"
+              value={baseFte}
+              onChange={(e) => setBaseFte(Number(e.target.value))}
+              className="w-20 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+              step="0.1"
+              min="0"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCreateDialog(true)}
+            >
+              Assign Person
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSprintFilterDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Sprint Filter
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      <CreatePersonAssignmentDialog
-        projectId={projectId}
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onSuccess={() => {
-          setShowCreateDialog(false);
-          fetchData();
-        }}
-      />
-
-      <ReallocatePersonAssignmentDialog
-        epicId={reallocationData?.epicId || 0}
-        personId={reallocationData?.personId || 0}
-        personName={reallocationData?.personName || ''}
-        epicAssignment={reallocationData?.epicAssignment || null}
-        open={!!reallocationData && !!reallocationData.epicAssignment}
-        onOpenChange={(open) => !open && setReallocationData(null)}
-        onSuccess={() => {
-          setReallocationData(null);
-          fetchData();
-        }}
-      />
-
-      <EpicSprintTable
-        epicResourceData={epicResourceData}
+      <ResourceSummary 
+        totalHours={summary.totalHours}
+        teamMembers={summary.teamMembers}
+        avgHoursPerSprint={summary.avgHoursPerSprint}
         formatHours={formatHours}
-        getPersonName={getPersonName}
+      />
+
+      <EpicSprintHoursTable
+        epicResourceData={epicResourceData}
         onReallocate={setReallocationData}
+        getPersonName={getPersonName}
+        formatHours={formatHours}
       />
 
       <PersonSprintTable
@@ -305,11 +398,34 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
         formatHours={formatHours}
       />
 
-      <ResourceSummary
-        totalHours={summary.totalHours}
-        teamMembers={summary.teamMembers}
-        avgHoursPerSprint={summary.avgHoursPerSprint}
-        formatHours={formatHours}
+      {showCreateDialog && (
+        <CreatePersonAssignmentDialog
+          projectId={projectId}
+          fteBasis={baseFte}
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onSuccess={fetchData}
+        />
+      )}
+
+      {reallocationData && (
+        <ReallocatePersonAssignmentDialog
+          epicId={reallocationData.epicId}
+          personId={reallocationData.personId}
+          personName={reallocationData.personName}
+          epicAssignment={reallocationData.epicAssignment}
+          open={!!reallocationData}
+          onOpenChange={(open) => !open && setReallocationData(null)}
+          onSuccess={fetchData}
+        />
+      )}
+
+      <SprintFilterDialog
+        projectId={projectId}
+        open={showSprintFilterDialog}
+        onOpenChange={setShowSprintFilterDialog}
+        selectedSprintIds={selectedSprintIds}
+        onSelectedSprintsChange={setSelectedSprintIds}
       />
     </div>
   );

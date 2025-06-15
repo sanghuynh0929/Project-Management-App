@@ -46,9 +46,8 @@ public class SprintService {
     @Transactional
     public SprintDTO createSprint(SprintDTO sprintDTO) {
         Sprint sprint = sprintMapper.toEntity(sprintDTO);
-        // New sprints should always start with NOT_STARTED status
-        sprint.setStatus(SprintStatus.NOT_STARTED);
         sprint = sprintRepository.save(sprint);
+        sprint.setStatus(SprintStatus.NOT_STARTED);
         return sprintMapper.toDTO(sprint);
     }
 

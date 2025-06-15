@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import { useParams } from 'react-router-dom';
-import ProjectSidebar from '@/components/layout/ProjectSidebar';
+import ProjectSidebar from '@/features/project/components/ProjectSidebar.tsx';
 import ProjectEpicView from '@/features/project/ProjectEpicView';
 import ProjectResourceView from '@/features/project/ProjectResourceView';
 import ProjectCostView from '@/features/project/ProjectCostView';

@@ -40,11 +40,6 @@ public class Sprint {
     @OneToMany(mappedBy = "sprint")
     private List<WorkItem> workItems = new ArrayList<>();
 
-    // Prevent direct status changes
-    public void setStatus(SprintStatus status) {
-        throw new IllegalStateException("Cannot directly change sprint status. Use the appropriate transition methods: startSprint(), completeSprint()");
-    }
-
     // Start the sprint
     public void startSprint() {
         if (status != SprintStatus.NOT_STARTED) {

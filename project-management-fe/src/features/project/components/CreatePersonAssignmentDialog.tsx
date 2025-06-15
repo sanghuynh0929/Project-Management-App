@@ -26,16 +26,18 @@ import type { Person, Epic, WorkItem } from '@/lib/types';
 
 interface CreatePersonAssignmentDialogProps {
   projectId: number;
+  fteBasis: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
 
 const DEFAULT_BACKLOG_DAYS = 14;
-const DEFAULT_FTE_HOURS = 5.7;
+const DEFAULT_FTE = 0.5;
 
 const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> = ({
   projectId,
+  fteBasis,
   open,
   onOpenChange,
   onSuccess,
@@ -54,8 +56,8 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
   const [description, setDescription] = useState<string>('');
   
   // New state for FTE calculation
-  const [useFteCalculation, setUseFteCalculation] = useState(true);
-  const [fteHoursPerDay, setFteHoursPerDay] = useState(DEFAULT_FTE_HOURS.toString());
+  const [useFteCalculation, setUseFteCalculation] = useState(false);
+  const [fteValue, setFteValue] = useState(DEFAULT_FTE.toString());
   const [numberOfDays, setNumberOfDays] = useState('');
 
   const calculateDaysFromDates = (startDate: string, endDate: string) => {
@@ -93,7 +95,7 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
       setDescription('');
       setError(null);
       setUseFteCalculation(true);
-      setFteHoursPerDay(DEFAULT_FTE_HOURS.toString());
+      setFteValue(DEFAULT_FTE.toString());
       setNumberOfDays('');
     }
   }, [open, projectId]);
@@ -102,11 +104,12 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
   useEffect(() => {
     const calculateDays = async () => {
       try {
+        let days = DEFAULT_BACKLOG_DAYS; // Default to 14 days
+
         if (assignmentType === 'epic' && selectedEpicId) {
           const epic = epics.find(e => e.id === selectedEpicId);
           if (epic && epic.startDate && epic.endDate) {
-            const days = calculateDaysFromDates(epic.startDate, epic.endDate);
-            setNumberOfDays(days.toString());
+            days = calculateDaysFromDates(epic.startDate, epic.endDate);
           }
         } else if (assignmentType === 'workitem' && selectedWorkItemId) {
           const workItem = workItems.find(w => w.id === selectedWorkItemId);
@@ -114,16 +117,16 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
             const sprintRes = await sprintService.getById(workItem.sprintId);
             const sprint = sprintRes.data;
             if (sprint.startDate && sprint.endDate) {
-              const days = calculateDaysFromDates(sprint.startDate, sprint.endDate);
-              setNumberOfDays(days.toString());
+              days = calculateDaysFromDates(sprint.startDate, sprint.endDate);
             }
-          } else {
-            // Work item is in backlog
-            setNumberOfDays(DEFAULT_BACKLOG_DAYS.toString());
           }
         }
+
+        setNumberOfDays(days.toString());
       } catch (err) {
         console.error('Error calculating days:', err);
+        // Set to default if there's an error
+        setNumberOfDays(DEFAULT_BACKLOG_DAYS.toString());
       }
     };
 
@@ -132,11 +135,11 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
 
   // Effect to calculate hours when FTE inputs change
   useEffect(() => {
-    if (useFteCalculation && fteHoursPerDay && numberOfDays) {
-      const calculatedHours = (parseFloat(fteHoursPerDay) * parseFloat(numberOfDays)).toFixed(1);
+    if (useFteCalculation && fteValue && numberOfDays) {
+      const calculatedHours = (fteBasis * parseFloat(fteValue) * parseFloat(numberOfDays)).toFixed(1);
       setHours(calculatedHours);
     }
-  }, [useFteCalculation, fteHoursPerDay, numberOfDays]);
+  }, [useFteCalculation, fteValue, numberOfDays, fteBasis]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,12 +155,53 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
         description: description || null,
       };
 
-      await personAssignmentService.create(assignmentData);
+      if (assignmentType === 'epic' && selectedEpicId) {
+        // Check for existing epic assignment
+        const { data: existingAssignments } = await personAssignmentService.getByEpicId(selectedEpicId);
+        const existingEpicAssignment = existingAssignments.find(
+          (pa: any) => pa.personId === selectedPersonId && pa.epicId === selectedEpicId
+        );
+
+        if (existingEpicAssignment) {
+          // Update existing epic assignment
+          await personAssignmentService.update(existingEpicAssignment.id, {
+            ...existingEpicAssignment,
+            hours: existingEpicAssignment.hours + Number(hours),
+            description: description ? 
+              `${existingEpicAssignment.description || ''}\n${description}` : 
+              existingEpicAssignment.description,
+          });
+        } else {
+          // Create new epic assignment
+          await personAssignmentService.create(assignmentData);
+        }
+      } else if (assignmentType === 'workitem' && selectedWorkItemId) {
+        // Check for existing work item assignment
+        const { data: existingAssignments } = await personAssignmentService.getByWorkItemId(selectedWorkItemId);
+        const existingWorkItemAssignment = existingAssignments.find(
+          (pa: any) => pa.personId === selectedPersonId && pa.workItemId === selectedWorkItemId
+        );
+
+        if (existingWorkItemAssignment) {
+          // Update existing work item assignment
+          await personAssignmentService.update(existingWorkItemAssignment.id, {
+            ...existingWorkItemAssignment,
+            hours: existingWorkItemAssignment.hours + Number(hours),
+            description: description ? 
+              `${existingWorkItemAssignment.description || ''}\n${description}` : 
+              existingWorkItemAssignment.description,
+          });
+        } else {
+          // Create new work item assignment
+          await personAssignmentService.create(assignmentData);
+        }
+      }
+
       onSuccess();
       onOpenChange(false);
     } catch (err) {
-      console.error('Error creating person assignment:', err);
-      setError('Failed to create assignment. Please try again.');
+      console.error('Error creating/updating person assignment:', err);
+      setError('Failed to create/update assignment. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -264,17 +308,21 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
           {useFteCalculation ? (
             <>
               <div className="space-y-2">
-                <Label htmlFor="fteHours">Hours per day (FTE)</Label>
+                <Label htmlFor="fteValue">FTE (0.0 - 1.0)</Label>
                 <Input
-                  id="fteHours"
+                  id="fteValue"
                   type="number"
                   step="0.1"
-                  min="0.1"
-                  value={fteHoursPerDay}
-                  onChange={(e) => setFteHoursPerDay(e.target.value)}
+                  min="0"
+                  max="1"
+                  value={fteValue}
+                  onChange={(e) => setFteValue(e.target.value)}
                   required
                   disabled={loading}
                 />
+                <div className="text-sm text-gray-500">
+                  Using {fteBasis} hours per day as FTE basis
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="days">Number of days</Label>
@@ -292,7 +340,7 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
               <div className="space-y-2">
                 <Label>Calculated Hours</Label>
                 <div className="text-sm text-gray-600">
-                  {hours ? `${hours} hours` : 'Please fill in FTE and days'}
+                  {hours ? `${hours} hours (${fteValue} FTE × ${fteBasis} hours/day × ${numberOfDays} days)` : 'Please fill in FTE and days'}
                 </div>
               </div>
             </>

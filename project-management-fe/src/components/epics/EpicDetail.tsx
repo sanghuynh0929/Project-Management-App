@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import EpicSidebar from '../layout/EpicSidebar.tsx';
+import EpicSidebar from './EpicSidebar.tsx';
 import WorkItemView from '../views/WorkItemView.tsx';
 import EpicResourceView from '../views/EpicResourceView';
 import EpicCostView from '../views/EpicCostView';
