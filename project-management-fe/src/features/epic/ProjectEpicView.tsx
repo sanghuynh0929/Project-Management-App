@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button.tsx';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { epicService } from '@/services/epicService';
-import { workItemService } from '@/services/workItemService';
-import { personAssignmentService } from '@/services/personAssignmentService';
-import { costAssignmentService } from '@/services/costAssignmentService';
-import EditEpicDialog from '@/features/project/components/EditEpicDialog';
-import EpicCard from '@/features/project/components/EpicCard';
+import { epicService } from '@/services/epicService.ts';
+import { workItemService } from '@/services/workItemService.ts';
+import { personAssignmentService } from '@/services/personAssignmentService.ts';
+import { costAssignmentService } from '@/services/costAssignmentService.ts';
+import EditEpicDialog from './components/EditEpicDialog.tsx';
+import EpicCard from './components/EpicCard.tsx';
+
+import type { WorkItem } from '@/lib/types';
+import EditWorkItemDialog from '@/features/shared/EditWorkItemDialog.tsx';
 
 interface EpicViewProps {
   projectId: number;
@@ -36,6 +39,8 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
   const [epics, setEpics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingEpic, setEditingEpic] = useState<any | null>(null);
+  const [editingWorkItem, setEditingWorkItem] = useState<WorkItem | null>(null);
+  const [selectedEpicId, setSelectedEpicId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -180,6 +185,75 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
     }
   };
 
+  const handleCreateWorkItem = (epicId: number) => {
+    const newWorkItem: WorkItem = {
+      id: 0, // This will be replaced by the server
+      title: '',
+      description: null,
+      status: 'TODO',
+      priority: 'MEDIUM',
+      type: 'STORY',
+      storyPoints: 0,
+      location: 'BACKLOG',
+      sprintId: null,
+      projectId: projectId,
+      epicId: epicId
+    };
+    setSelectedEpicId(epicId);
+    setEditingWorkItem(newWorkItem);
+  };
+
+  const handleWorkItemEditSuccess = async () => {
+    setEditingWorkItem(null);
+    // Refresh the epics list
+    const { data: epicsData } = await epicService.getByProjectId(projectId);
+    const epicStats = await Promise.all(
+      epicsData.map(async (epic: any) => {
+        const [workItemsRes, epicPersonAssignmentsRes, epicCostAssignmentsRes] = await Promise.all([
+          workItemService.getByEpicId(epic.id),
+          personAssignmentService.getByEpicId(epic.id),
+          costAssignmentService.getByEpicId(epic.id)
+        ]);
+
+        const workItems = workItemsRes.data;
+        const personAssignments = epicPersonAssignmentsRes.data;
+        const costAssignments = epicCostAssignmentsRes.data;
+
+        const assignedPeople = personAssignments.length;
+        const progress = calculateProgress(workItems);
+        
+        const epicCostIds = costAssignments.map((ca: any) => ca.costId);
+        const workItemCostAssignments = await Promise.all(
+          workItems.map((workItem: any) => costAssignmentService.getByWorkItemId(workItem.id))
+        );
+        const workItemCostIds = workItemCostAssignments.flatMap((res: any) => 
+          res.data.map((ca: any) => ca.costId)
+        );
+
+        const allCostIds = [...new Set([...epicCostIds, ...workItemCostIds])];
+
+        let totalCost = 0;
+        if (allCostIds.length > 0) {
+          const costResArr = await Promise.all(
+            allCostIds.map((costId: number) => 
+              import('@/services/costService').then(m => m.costService.getById(costId))
+            )
+          );
+          totalCost = costResArr.reduce((sum: number, res: any) => sum + (res.data.amount || 0), 0);
+        }
+
+        return {
+          ...epic,
+          workItemCount: workItems.length,
+          assignedPeople,
+          totalCost,
+          progress
+        };
+      })
+    );
+    setEpics(epicStats);
+  };
+
   if (loading) {
     return <div className="text-center text-gray-500">Loading epics...</div>;
   }
@@ -202,13 +276,22 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {epics.map((epic) => (
-          <EpicCard
-            key={epic.id}
-            epic={epic}
-            onClick={handleEpicClick}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          <div key={epic.id} className="space-y-4">
+            <EpicCard
+              epic={epic}
+              onClick={handleEpicClick}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+            <Button
+              onClick={() => handleCreateWorkItem(epic.id)}
+              variant="outline"
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Work Item
+            </Button>
+          </div>
         ))}
       </div>
 
@@ -219,6 +302,15 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
         onOpenChange={(open) => !open && setEditingEpic(null)}
         onSuccess={handleEditSuccess}
       />
+
+      {editingWorkItem && (
+        <EditWorkItemDialog
+          workItem={editingWorkItem}
+          open={!!editingWorkItem}
+          onOpenChange={(open) => !open && setEditingWorkItem(null)}
+          onSuccess={handleWorkItemEditSuccess}
+        />
+      )}
     </div>
   );
 };

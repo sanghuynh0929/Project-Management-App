@@ -113,13 +113,13 @@ const ReallocatePersonAssignmentDialog: React.FC<ReallocatePersonAssignmentDialo
           description: `${existingWorkItemAssignment.description || ''}\nAdded ${hoursToAllocate}h from epic assignment`,
         });
       } else {
-        await personAssignmentService.create({
-          personId,
-          workItemId: selectedWorkItemId,
-          epicId: null,
-          hours: hoursToAllocate,
-          description: `Reallocated ${hoursToAllocate}h from epic assignment`,
-        });
+      await personAssignmentService.create({
+        personId,
+        workItemId: selectedWorkItemId,
+        epicId: null,
+        hours: hoursToAllocate,
+        description: `Reallocated ${hoursToAllocate}h from epic assignment`,
+      });
       }
 
       // Update epic assignment with remaining hours

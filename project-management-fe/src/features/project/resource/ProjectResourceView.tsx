@@ -6,9 +6,9 @@ import { sprintService } from '@/services/sprintService';
 import { personService } from '@/services/personService';
 import CreatePersonAssignmentDialog from './components/CreatePersonAssignmentDialog';
 import ReallocatePersonAssignmentDialog from './components/ReallocatePersonAssignmentDialog';
-import SprintFilterDialog from './components/SprintFilterDialog';
+import SprintFilterDialog from '../sprint/components/SprintFilterDialog';
 import ResourceSummary from './components/ResourceSummary';
-import EpicSprintHoursTable from './components/EpicSprintHoursTable';
+import EpicSprintHoursTable from '@/features/epic/components/EpicSprintHoursTable';
 import PersonSprintTable from './components/PersonSprintTable';
 import { Button } from '@/components/ui/button';
 import { Filter } from 'lucide-react';
@@ -307,8 +307,6 @@ const ProjectResourceView: React.FC<ResourceViewProps> = ({ projectId }) => {
         }))
       }];
 
-      console.log('Person names mapping:', personNames);
-      console.log('Person rows with names:', personBySprintDataToSet[0].personRows);
 
       setPersonBySprintData(personBySprintDataToSet);
 

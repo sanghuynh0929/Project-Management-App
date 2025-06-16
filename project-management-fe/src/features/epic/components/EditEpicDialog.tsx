@@ -5,16 +5,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { epicService } from '@/services/epicService';
+} from '@/components/ui/dialog.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Textarea } from '@/components/ui/textarea.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import { epicService } from '@/services/epicService.ts';
 
 interface EditEpicDialogProps {
   projectId: number;
-  epic?: any;  // Optional - if provided, we're editing an existing epic
+  epic?: any;  
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (epic: any) => void;
@@ -92,7 +92,7 @@ const EditEpicDialog: React.FC<EditEpicDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Epic' : 'Create New Epic'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? `Update the details for ${epic.title}` : 'Add a new epic to your project'}
+            {isEditing ? `Update the details for ${epic?.title}` : 'Add a new epic to your project'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">

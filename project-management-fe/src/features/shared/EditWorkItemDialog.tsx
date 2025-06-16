@@ -14,18 +14,13 @@ import {
 import { workItemService } from '@/services/workItemService';
 import { sprintService } from '@/services/sprintService';
 import { epicService } from '@/services/epicService';
-import type { WorkItem, Sprint } from '@/lib/types';
+import type { WorkItem, Sprint, Epic } from '@/lib/types';
 
 interface EditWorkItemDialogProps {
   workItem: WorkItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-}
-
-interface Epic {
-  id: number;
-  title: string;
 }
 
 const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
@@ -147,7 +142,7 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
           <DialogTitle>Edit Work Item</DialogTitle>
           <DialogDescription asChild>
             <div>
-              <p>Update the details for {workItem.title}</p>
+              <p>Update the details for {workItem?.title}</p>
               {initialStatus === 'DONE' && (
                 <p className="mt-2 text-sm text-yellow-600">
                   Note: Status cannot be changed as this item is already completed
@@ -262,35 +257,35 @@ const EditWorkItemDialog: React.FC<EditWorkItemDialogProps> = ({
             <Label htmlFor="sprintId">Location</Label>
             <Select 
               value={status === 'DONE' ? 'completed' : (sprintId === null ? 'backlog' : availableSprints.find(s => s.id === sprintId)?.name || 'backlog')}
-              onValueChange={(value) => {
-                if (value === 'backlog') {
-                  setSprintId(null);
-                  setLocation('BACKLOG');
-                } else if (value !== 'completed') {
-                  const selectedSprint = availableSprints.find(s => s.name === value);
-                  if (selectedSprint) {
-                    setSprintId(selectedSprint.id);
-                    setLocation('SPRINT');
+                onValueChange={(value) => {
+                  if (value === 'backlog') {
+                    setSprintId(null);
+                    setLocation('BACKLOG');
+                  } else if (value !== 'completed') {
+                    const selectedSprint = availableSprints.find(s => s.name === value);
+                    if (selectedSprint) {
+                      setSprintId(selectedSprint.id);
+                      setLocation('SPRINT');
+                    }
                   }
-                }
-              }}
-            >
-              <SelectTrigger disabled={status === 'DONE' || loading}>
-                <SelectValue>{getLocationDisplayValue()}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {status !== 'DONE' && (
-                  <>
-                    <SelectItem value="backlog">Backlog</SelectItem>
-                    {availableSprints.map((sprint) => (
-                      <SelectItem key={sprint.id} value={sprint.name}>
-                        {sprint.name} ({sprint.status === 'ACTIVE' ? 'Active' : 'Not Started'})
-                      </SelectItem>
-                    ))}
-                  </>
-                )}
-              </SelectContent>
-            </Select>
+                }}
+              >
+                <SelectTrigger disabled={status === 'DONE' || loading}>
+                  <SelectValue>{getLocationDisplayValue()}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {status !== 'DONE' && (
+                    <>
+                      <SelectItem value="backlog">Backlog</SelectItem>
+                      {availableSprints.map((sprint) => (
+                        <SelectItem key={sprint.id} value={sprint.name}>
+                          {sprint.name} ({sprint.status === 'ACTIVE' ? 'Active' : 'Not Started'})
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
+                </SelectContent>
+              </Select>
           </div>
 
           {error && (

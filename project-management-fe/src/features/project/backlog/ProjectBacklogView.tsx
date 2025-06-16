@@ -3,8 +3,8 @@ import { workItemService } from '@/services/workItemService';
 import { sprintService } from '@/services/sprintService';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import WorkItemTable from '@/features/project/components/WorkItemTable';
-import EditWorkItemDialog from '@/features/project/components/EditWorkItemDialog';
+import WorkItemTable from './components/WorkItemTable';
+import EditWorkItemDialog from '@/features/shared/EditWorkItemDialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 

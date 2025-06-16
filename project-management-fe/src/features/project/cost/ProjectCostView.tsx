@@ -10,8 +10,11 @@ import { epicService } from '@/services/epicService';
 import { workItemService } from '@/services/workItemService';
 import { costAssignmentService } from '@/services/costAssignmentService';
 import { sprintService } from '@/services/sprintService';
-import SprintFilterDialog from './components/SprintFilterDialog';
+import SprintFilterDialog from '../sprint/components/SprintFilterDialog';
 import CreateCostAssignmentDialog from './components/CreateCostAssignmentDialog';
+import { costService } from '@/services/costService';
+import CostItemDialog from './components/CostItemDialog';
+import { Plus } from 'lucide-react';
 
 interface CostViewProps {
   projectId: number;
@@ -91,7 +94,7 @@ const ProjectCostView: React.FC<CostViewProps> = ({ projectId }) => {
           
           // For each cost assignment, fetch the cost object
           const costObjs = await Promise.all(
-            epicCostAssignments.map((ca: any) => import('@/services/costService').then(m => m.costService.getById(ca.costId)))
+            epicCostAssignments.map((ca: any) => costService.getById(ca.costId))
           );
 
           // Get work items for this epic
@@ -103,7 +106,7 @@ const ProjectCostView: React.FC<CostViewProps> = ({ projectId }) => {
               const wiCostAssignmentsRes = await costAssignmentService.getByWorkItemId(wi.id);
               const wiCostAssignments = wiCostAssignmentsRes.data;
               return Promise.all(
-                wiCostAssignments.map((ca: any) => import('@/services/costService').then(m => m.costService.getById(ca.costId)))
+                wiCostAssignments.map((ca: any) => costService.getById(ca.costId))
               );
             })
           );

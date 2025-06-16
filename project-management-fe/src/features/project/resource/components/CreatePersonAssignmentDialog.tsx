@@ -193,7 +193,7 @@ const CreatePersonAssignmentDialog: React.FC<CreatePersonAssignmentDialogProps> 
           });
         } else {
           // Create new work item assignment
-          await personAssignmentService.create(assignmentData);
+      await personAssignmentService.create(assignmentData);
         }
       }
 

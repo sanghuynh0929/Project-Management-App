@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from '@/pages/Landing';
 import ProjectDetail from '@/pages/ProjectDetail';
-import EpicDetail from '../components/epics/EpicDetail';
+import EpicSummaryView from '@/features/epic/EpicSummaryView';
 
 const Index = () => {
   return (
@@ -9,7 +9,7 @@ const Index = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/projects/:projectId" element={<ProjectDetail />} />
-        {/*<Route path="/projects/:projectId/epics/:epicId" element={<EpicDetail />} />*/}
+        <Route path="/projects/:projectId/epics/:epicId" element={<EpicSummaryView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

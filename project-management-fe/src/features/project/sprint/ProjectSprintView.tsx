@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { workItemService } from '@/services/workItemService';
 import { sprintService } from '@/services/sprintService';
+import { workItemService } from '@/services/workItemService';
+import EditSprintDialog from './components/EditSprintDialog';
+import WorkItemCard from '../backlog/components/WorkItemCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -11,9 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import WorkItemCard from '@/features/project/components/WorkItemCard';
-import EditWorkItemDialog from '@/features/project/components/EditWorkItemDialog';
-import EditSprintDialog from '@/features/project/components/EditSprintDialog';
+import EditWorkItemDialog from '@/features/shared/EditWorkItemDialog';
 
 interface ProjectActiveSprintViewProps {
   projectId: number;

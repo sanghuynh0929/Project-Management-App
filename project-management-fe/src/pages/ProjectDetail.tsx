@@ -1,17 +1,17 @@
 import React, {useEffect, useState} from 'react';
 import { useParams } from 'react-router-dom';
-import ProjectSidebar from '@/features/project/components/ProjectSidebar.tsx';
-import ProjectEpicView from '@/features/project/ProjectEpicView';
-import ProjectResourceView from '@/features/project/ProjectResourceView';
-import ProjectCostView from '@/features/project/ProjectCostView';
-import ProjectTimelineView from '@/features/project/ProjectTimelineView';
-import ProjectSprintView from "@/features/project/ProjectSprintView.tsx";
-import ProjectBacklogView from "@/features/project/ProjectBacklogView.tsx";
-import {projectService} from "@/services/projectService.ts";
-import {epicService} from "@/services/epicService.ts";
-import {workItemService} from "@/services/workItemService.ts";
-import {personAssignmentService} from "@/services/personAssignmentService.ts";
-import {costAssignmentService} from "@/services/costAssignmentService.ts";
+import ProjectSidebar from '@/features/project/common/components/ProjectSidebar.tsx';
+import ProjectEpicView from '@/features/epic/ProjectEpicView.tsx';
+import ProjectResourceView from '@/features/project/resource/ProjectResourceView';
+import ProjectCostView from '@/features/project/cost/ProjectCostView';
+import ProjectTimelineView from '@/features/project/timeline/ProjectTimelineView';
+import ProjectSprintView from '@/features/project/sprint/ProjectSprintView';
+import ProjectBacklogView from '@/features/project/backlog/ProjectBacklogView';
+import {projectService} from '@/services/projectService';
+import {epicService} from '@/services/epicService';
+import {workItemService} from '@/services/workItemService';
+import {personAssignmentService} from '@/services/personAssignmentService';
+import {costAssignmentService} from '@/services/costAssignmentService';
 
 
 type ViewType = 'epics' | 'resources' | 'costs' | 'timeline' | 'backlog' | 'sprint';
