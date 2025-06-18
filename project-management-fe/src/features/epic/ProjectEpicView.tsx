@@ -50,7 +50,23 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
             const personAssignments = epicPersonAssignmentsRes.data;
             const costAssignments = epicCostAssignmentsRes.data;
 
-            const assignedPeople = personAssignments.length;
+            // Get work item person assignments
+            const workItemPersonAssignments = await Promise.all(
+              workItems.map(workItem => personAssignmentService.getByWorkItemId(workItem.id))
+            );
+
+            // Get all unique person IDs from both epic and work item assignments
+            const uniquePersonIds = new Set<number>();
+            
+            // Add epic-level person IDs
+            personAssignments.forEach(pa => uniquePersonIds.add(pa.personId));
+            
+            // Add work item-level person IDs
+            workItemPersonAssignments.forEach(res => {
+              res.data.forEach(pa => uniquePersonIds.add(pa.personId));
+            });
+
+            const assignedPeople = uniquePersonIds.size;
             
             // Calculate progress based on work items
             const progress = calculateProgress(workItems);
@@ -126,7 +142,23 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
         const personAssignments = epicPersonAssignmentsRes.data;
         const costAssignments = epicCostAssignmentsRes.data;
 
-        const assignedPeople = personAssignments.length;
+        // Get work item person assignments
+        const workItemPersonAssignments = await Promise.all(
+          workItems.map(workItem => personAssignmentService.getByWorkItemId(workItem.id))
+        );
+
+        // Get all unique person IDs from both epic and work item assignments
+        const uniquePersonIds = new Set<number>();
+        
+        // Add epic-level person IDs
+        personAssignments.forEach(pa => uniquePersonIds.add(pa.personId));
+        
+        // Add work item-level person IDs
+        workItemPersonAssignments.forEach(res => {
+          res.data.forEach(pa => uniquePersonIds.add(pa.personId));
+        });
+
+        const assignedPeople = uniquePersonIds.size;
         
         // Calculate progress based on work items
         const progress = calculateProgress(workItems);
@@ -197,7 +229,23 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
         const personAssignments = epicPersonAssignmentsRes.data;
         const costAssignments = epicCostAssignmentsRes.data;
 
-        const assignedPeople = personAssignments.length;
+        // Get work item person assignments
+        const workItemPersonAssignments = await Promise.all(
+          workItems.map(workItem => personAssignmentService.getByWorkItemId(workItem.id))
+        );
+
+        // Get all unique person IDs from both epic and work item assignments
+        const uniquePersonIds = new Set<number>();
+        
+        // Add epic-level person IDs
+        personAssignments.forEach(pa => uniquePersonIds.add(pa.personId));
+        
+        // Add work item-level person IDs
+        workItemPersonAssignments.forEach(res => {
+          res.data.forEach(pa => uniquePersonIds.add(pa.personId));
+        });
+
+        const assignedPeople = uniquePersonIds.size;
         const progress = calculateProgress(workItems);
         
         const epicCostIds = costAssignments.map((ca: any) => ca.costId);
