@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import WorkItemTable from './components/WorkItemTable';
 import EditWorkItemDialog from '@/features/shared/EditWorkItemDialog';
+import CreateWorkItemDialog from '@/features/shared/CreateWorkItemDialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
@@ -18,6 +19,7 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ projectId }) =>
   const [loading, setLoading] = useState(true);
   const [editingWorkItem, setEditingWorkItem] = useState<any | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -88,7 +90,7 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ projectId }) =>
           <h1 className="text-2xl font-bold text-gray-900">Backlog</h1>
           <p className="text-gray-600">Manage work items not assigned to any epic</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           New Work Item
         </Button>
@@ -148,6 +150,13 @@ const ProjectBacklogView: React.FC<ProjectBacklogViewProps> = ({ projectId }) =>
           onSuccess={handleEditSuccess}
         />
       )}
+
+      <CreateWorkItemDialog
+        projectId={projectId}
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={fetchData}
+      />
     </div>
   );
 };

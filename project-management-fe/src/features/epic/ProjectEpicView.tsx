@@ -8,6 +8,7 @@ import { personAssignmentService } from '@/services/personAssignmentService.ts';
 import { costAssignmentService } from '@/services/costAssignmentService.ts';
 import EditEpicDialog from './components/EditEpicDialog.tsx';
 import EpicCard from './components/EpicCard.tsx';
+import CreateWorkItemDialog from '@/features/shared/CreateWorkItemDialog';
 
 import type { WorkItem } from '@/lib/types';
 import EditWorkItemDialog from '@/features/shared/EditWorkItemDialog.tsx';
@@ -17,20 +18,9 @@ interface EpicViewProps {
 }
 
 const calculateProgress = (workItems: any[]) => {
-  if (workItems.length === 0) {
-    return { done: 0, inProgress: 0, todo: 100 };
-  }
-
-  const done = workItems.filter(item => item.status === 'DONE').length;
-  const inProgress = workItems.filter(item => item.status === 'IN_PROGRESS').length;
-  const todo = workItems.filter(item => item.status === 'TODO').length;
-
-  const total = workItems.length;
-  return {
-    done: Math.round((done / total) * 100),
-    inProgress: Math.round((inProgress / total) * 100),
-    todo: Math.round((todo / total) * 100)
-  };
+  if (workItems.length === 0) return 0;
+  const completedItems = workItems.filter(item => item.status === 'DONE').length;
+  return Math.round((completedItems / workItems.length) * 100);
 };
 
 const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
@@ -41,6 +31,7 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
   const [editingEpic, setEditingEpic] = useState<any | null>(null);
   const [editingWorkItem, setEditingWorkItem] = useState<WorkItem | null>(null);
   const [selectedEpicId, setSelectedEpicId] = useState<number | null>(null);
+  const [isCreateWorkItemDialogOpen, setIsCreateWorkItemDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -158,7 +149,7 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
         if (allCostIds.length > 0) {
           const costResArr = await Promise.all(
             allCostIds.map((costId: number) => 
-              import('@/services/costService.ts').then(m => m.costService.getById(costId))
+              import('@/services/costService').then(m => m.costService.getById(costId))
             )
           );
           totalCost = costResArr.reduce((sum: number, res: any) => sum + (res.data.amount || 0), 0);
@@ -186,21 +177,8 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
   };
 
   const handleCreateWorkItem = (epicId: number) => {
-    const newWorkItem: WorkItem = {
-      id: 0, // This will be replaced by the server
-      title: '',
-      description: null,
-      status: 'TODO',
-      priority: 'MEDIUM',
-      type: 'STORY',
-      storyPoints: 0,
-      location: 'BACKLOG',
-      sprintId: null,
-      projectId: projectId,
-      epicId: epicId
-    };
     setSelectedEpicId(epicId);
-    setEditingWorkItem(newWorkItem);
+    setIsCreateWorkItemDialogOpen(true);
   };
 
   const handleWorkItemEditSuccess = async () => {
@@ -311,6 +289,14 @@ const EpicView: React.FC<EpicViewProps> = ({ projectId }) => {
           onSuccess={handleWorkItemEditSuccess}
         />
       )}
+
+      <CreateWorkItemDialog
+        projectId={projectId}
+        open={isCreateWorkItemDialogOpen}
+        onOpenChange={setIsCreateWorkItemDialogOpen}
+        onSuccess={handleWorkItemEditSuccess}
+        defaultEpicId={selectedEpicId}
+      />
     </div>
   );
 };
