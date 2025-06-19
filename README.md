@@ -7,7 +7,7 @@ This is a full-stack Agile project management system backend built with **Spring
 - Create and manage multiple projects
 - Define epics and break them down into work items
 - Organize work items into sprints with execution and review cycle
-- Assign personnel and allocate costs to specific items or sprints
+- Assign personnel and allocate costs to specific work items or epics
 - Automatically generate relational database schema from JPA models
 - RESTful APIs for integration with a frontend (React)
 
